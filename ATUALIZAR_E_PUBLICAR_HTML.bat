@@ -1,6 +1,12 @@
 @echo off
 setlocal EnableExtensions
 
+if /I not "%~1"=="__RUN__" (
+  start "Atualizar e Publicar HTML Aura" cmd /k ""%~f0" __RUN__"
+  exit /b 0
+)
+shift /1
+
 set "EXIT_CODE=0"
 set "HAS_CHANGES=0"
 set "PAGE_URL=https://luan9753.github.io/banco-aura-dashboard/HTMLACOMPANHAMENTO.html"
