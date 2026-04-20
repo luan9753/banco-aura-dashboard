@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Aura - Entregas e Inserções</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #14202b;
+      --muted: #5f6d7a;
+      --line: #d9e1ea;
+      --ok: #1f9d7a;
+      --warn: #ce4d4d;
+      --a: #2563eb;
+      --b: #0ea5e9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 0% -10%, #dcecff 0%, transparent 60%),
+        radial-gradient(900px 400px at 100% -15%, #d7f9ef 0%, transparent 60%),
+        var(--bg);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 10px auto;
+      padding: 0 10px 10px;
+    }
+    .header {
+      background: linear-gradient(135deg, #0f2f53 0%, #134a87 55%, #1a69b0 100%);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      box-shadow: 0 6px 16px rgba(13, 36, 66, .20);
+    }
+    .header h1 {
+      margin: 0 0 2px;
+      font-size: 1.05rem;
+    }
+    .sub {
+      color: #d9ecff;
+      font-size: .82rem;
+    }
+    .filters {
+      margin-top: 8px;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      align-items: end;
+    }
+    .fgroup {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .flabel {
+      color: var(--muted);
+      font-size: .74rem;
+    }
+    .finput {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: .82rem;
+      color: var(--ink);
+      background: #fff;
+    }
+    .fbtn {
+      border: 1px solid #1b4f8a;
+      background: #1a69b0;
+      color: #fff;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: .82rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .fbtn.secondary {
+      border-color: #9fb3c7;
+      background: #eef3f8;
+      color: #33485c;
+    }
+    .filter-state {
+      margin-top: 6px;
+      color: #49627a;
+      font-size: .78rem;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      box-shadow: 0 2px 8px rgba(23, 35, 50, .05);
+    }
+    .k {
+      color: var(--muted);
+      font-size: .74rem;
+      margin-bottom: 2px;
+    }
+    .v {
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .progress {
+      margin-top: 4px;
+      height: 6px;
+      border-radius: 999px;
+      background: #e7edf4;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--ok), #36bb96);
+      width: 0%;
+    }
+    .section {
+      margin-top: 8px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 2px 8px rgba(23, 35, 50, .05);
+    }
+    .section h2 {
+      margin: 0 0 6px;
+      font-size: .9rem;
+    }
+    .chart-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+    svg {
+      width: 100%;
+      min-width: 760px;
+      height: 255px;
+      display: block;
+      background: #fff;
+      border: 1px solid #e8edf3;
+      border-radius: 8px;
+    }
+    .legend {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: .76rem;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      transform: translateY(1px);
+    }
+    .t {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: .74rem;
+    }
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .sensor-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: #fbfdff;
+    }
+    .sensor-name {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .sensor-val {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1f2e3b;
+      line-height: 1.1;
+    }
+    .latency-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 280px));
+      gap: 8px;
+      margin-top: 6px;
+    }
+    @media (max-width: 950px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .sensor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .latency-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>Dashboard simples de entregas x inserções (Aura)</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="section filters">
+      <div class="fgroup">
+        <div class="flabel">Data inicial (entrega)</div>
+        <input class="finput" type="date" id="flt_start" />
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Data final (entrega)</div>
+        <input class="finput" type="date" id="flt_end" />
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Sensor (gráficos por sensor)</div>
+        <select class="finput" id="flt_sensor">
+          <option value="all">Todos</option>
+          <option value="ares">ARES</option>
+          <option value="syos">SYOS</option>
+          <option value="shield">Shield</option>
+          <option value="web">Sensor web</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Faixa térmica</div>
+        <select class="finput" id="flt_thermal">
+          <option value="all">Todos</option>
+          <option value="refrigerado">Refrigerado (>= 0°C)</option>
+          <option value="congelado">Congelado (< 0°C)</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Ações</div>
+        <button class="fbtn" id="btn_apply" type="button">Aplicar filtro</button>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Ações</div>
+        <button class="fbtn secondary" id="btn_reset" type="button">Limpar</button>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Atalho</div>
+        <button class="fbtn secondary" id="btn_today" type="button">Somente hoje</button>
+      </div>
+    </div>
+    <div class="filter-state" id="filter_state"></div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="k">Pedidos entregues</div>
+        <div class="v" id="p_ent">-</div>
+      </div>
+      <div class="card">
+        <div class="k">Pedidos inseridos</div>
+        <div class="v" id="p_ins">-</div>
+      </div>
+      <div class="card">
+        <div class="k">Loggers entregues</div>
+        <div class="v" id="l_ent">-</div>
+      </div>
+      <div class="card">
+        <div class="k">Loggers inseridos</div>
+        <div class="v" id="l_ins">-</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="k">Proporção de pedidos inseridos</div>
+        <div class="v" id="p_pct">-</div>
+        <div class="progress"><div class="fill" id="p_fill"></div></div>
+      </div>
+      <div class="card">
+        <div class="k">Pedidos pendentes</div>
+        <div class="v" id="p_pen">-</div>
+      </div>
+      <div class="card">
+        <div class="k">Proporção de loggers inseridos</div>
+        <div class="v" id="l_pct">-</div>
+        <div class="progress"><div class="fill" id="l_fill"></div></div>
+      </div>
+      <div class="card">
+        <div class="k">Loggers pendentes</div>
+        <div class="v" id="l_pen">-</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Pedidos por dia: entregues x inseridos</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#2563eb"></span>Entregues</div>
+        <div><span class="dot" style="background:#0ea5e9"></span>Inseridos</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartPedidos"></svg></div>
+    </div>
+
+    <div class="section">
+      <h2 id="h2_loggers">Loggers por dia: entregues x inseridos</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#1f9d7a"></span>Entregues</div>
+        <div><span class="dot" style="background:#65c7ae"></span>Inseridos</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartLoggers"></svg></div>
+      <div class="t">Gerado em <span id="gen_at"></span></div>
+    </div>
+
+
+    <div class="section">
+      <h2>Loggers pendentes por tipo</h2>
+      <div class="sensor-grid">
+        <div class="sensor-card">
+          <div class="sensor-name">ARES</div>
+          <div class="sensor-val" id="pend_ares">-</div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-name">SYOS</div>
+          <div class="sensor-val" id="pend_syos">-</div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-name">Shield</div>
+          <div class="sensor-val" id="pend_shield">-</div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-name">Sensor web</div>
+          <div class="sensor-val" id="pend_web">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Tempo para inserir pedido após entrega</h2>
+      <div class="latency-grid">
+        <div class="sensor-card">
+          <div class="sensor-name">Média (horas)</div>
+          <div class="sensor-val" id="lat_avg_h">-</div>
+        </div>
+      </div>
+      <div class="t">Cálculo: <code>orders.created_at - sync_orders.delivery_date</code> por pedido.</div>
+    </div>
+    <div class="section">
+      <h2>Tempo para lançar data de entrega no sistema</h2>
+      <div class="latency-grid">
+        <div class="sensor-card">
+          <div class="sensor-name">Média (horas)</div>
+          <div class="sensor-val" id="dl_avg_h">-</div>
+        </div>
+        <div class="sensor-card">
+          <div class="sensor-name">Pedidos válidos</div>
+          <div class="sensor-val" id="dl_valid">-</div>
+        </div>
+      </div>
+      <div class="t">Cálculo: <code>Data_Lancamento - Data_Entrega</code> na ocorrência 32 (somente valores não negativos).</div>
+      <div class="t" id="dl_status"></div>
+    </div>
+    <div class="section">
+      <h2>Média de horas para lançar data de entrega por dia</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#1e40af"></span>Média horas para lançamento da entrega</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartDeliveryLaunch"></svg></div>
+      <div class="t">Exemplo: pedidos entregues em 10/04 mostram a média de horas até a data de entrega ser lançada no sistema.</div>
+    </div>
+    <div class="section">
+      <h2>Média de horas por dia para inserir pedidos</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#2563eb"></span>Média horas (delivery_date x created_at)</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartLatency"></svg></div>
+      <div class="t">Exemplo: para 16/04, o valor mostra a média de horas dos pedidos com entrega em 16/04 que já subiram no Aura.</div>
+    </div>
+    <div class="section" id="secLatencyAres">
+      <h2>Média de horas por dia para inserir itens ARES</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#1d4ed8"></span>Média horas ARES (delivery do item x created_at do pedido)</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartLatencyAres"></svg></div>
+      <div class="t">Base item a item: cruza chave de <code>sync_items</code> com <code>order_items</code>.</div>
+    </div>
+    <div class="section" id="secLatencySyos">
+      <h2>Média de horas por dia para inserir itens SYOS</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#0f766e"></span>Média horas SYOS (delivery do item x created_at do pedido)</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartLatencySyos"></svg></div>
+      <div class="t">Base item a item: cruza chave de <code>sync_items</code> com <code>order_items</code>.</div>
+    </div>
+    <div class="section" id="secLatencyShield">
+      <h2>Média de horas por dia para inserir itens Shield</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#b45309"></span>Média horas Shield (delivery do item x created_at do pedido)</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartLatencyShield"></svg></div>
+      <div class="t">Base item a item: cruza chave de <code>sync_items</code> com <code>order_items</code>.</div>
+    </div>
+    <div class="section" id="secLatencyWeb">
+      <h2>Média de horas por dia para inserir itens Sensor web</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#475569"></span>Média horas Sensor web (delivery do item x created_at do pedido)</div>
+      </div>
+      <div class="chart-wrap"><svg id="chartLatencyWeb"></svg></div>
+      <div class="t">Base item a item: cruza chave de <code>sync_items</code> com <code>order_items</code>.</div>
+    </div>
+  </div>
+
+  <script>
+    const payload = {"start_date": "2026-04-10", "generated_at": "2026-04-20 15:45:51", "totals": {"pedidos_entregues_total": 326, "pedidos_inseridos_total": 261, "loggers_entregues_total": 1814, "loggers_inseridos_total": 1290, "pedidos_pct": 80.06134969325154, "loggers_pct": 71.1135611907387, "pedidos_pendentes_total": 65, "loggers_pendentes_total": 524}, "daily": [{"dia": "2026-04-10", "pedidos_entregues": 53, "pedidos_inseridos": 34, "loggers_entregues": 515, "loggers_inseridos": 294, "avg_horas_pedidos": 67.83718091503268, "avg_horas_itens_ares": 63.08968131235827, "avg_horas_itens_syos": null, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": null}, {"dia": "2026-04-11", "pedidos_entregues": 5, "pedidos_inseridos": 2, "loggers_entregues": 6, "loggers_inseridos": 2, "avg_horas_pedidos": 46.40417472222222, "avg_horas_itens_ares": 46.40417472222222, "avg_horas_itens_syos": null, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": null}, {"dia": "2026-04-13", "pedidos_entregues": 17, "pedidos_inseridos": 14, "loggers_entregues": 86, "loggers_inseridos": 83, "avg_horas_pedidos": 18.48558228174603, "avg_horas_itens_ares": 8.089568936314363, "avg_horas_itens_syos": 23.389669722222223, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": null}, {"dia": "2026-04-14", "pedidos_entregues": 98, "pedidos_inseridos": 79, "loggers_entregues": 278, "loggers_inseridos": 242, "avg_horas_pedidos": 7.814208878340366, "avg_horas_itens_ares": 7.574093428030303, "avg_horas_itens_syos": 2.775516875, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": 50.16305888888889}, {"dia": "2026-04-15", "pedidos_entregues": 39, "pedidos_inseridos": 26, "loggers_entregues": 218, "loggers_inseridos": 187, "avg_horas_pedidos": 28.256187126068376, "avg_horas_itens_ares": 36.112011461640215, "avg_horas_itens_syos": 9.020510277777777, "avg_horas_itens_shield": 2.717751388888889, "avg_horas_itens_sensor_web": 26.833168534188033}, {"dia": "2026-04-16", "pedidos_entregues": 44, "pedidos_inseridos": 43, "loggers_entregues": 398, "loggers_inseridos": 363, "avg_horas_pedidos": 8.915266518087856, "avg_horas_itens_ares": 5.045651360493827, "avg_horas_itens_syos": null, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": 23.84135423510467}, {"dia": "2026-04-17", "pedidos_entregues": 50, "pedidos_inseridos": 44, "loggers_entregues": 254, "loggers_inseridos": 64, "avg_horas_pedidos": 27.5987014520202, "avg_horas_itens_ares": 33.79225134982639, "avg_horas_itens_syos": null, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": null}, {"dia": "2026-04-18", "pedidos_entregues": 1, "pedidos_inseridos": 1, "loggers_entregues": 40, "loggers_inseridos": 37, "avg_horas_pedidos": 52.65466527777778, "avg_horas_itens_ares": null, "avg_horas_itens_syos": 52.65466527777778, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": null}, {"dia": "2026-04-20", "pedidos_entregues": 19, "pedidos_inseridos": 18, "loggers_entregues": 19, "loggers_inseridos": 18, "avg_horas_pedidos": 0.6916648611111111, "avg_horas_itens_ares": 0.6916648611111111, "avg_horas_itens_syos": null, "avg_horas_itens_shield": null, "avg_horas_itens_sensor_web": null}], "sensor_pending": {"ARES": 24, "SYOS": 327, "Shield": 39, "Sensor web": 134}, "sensor_pending_daily": [{"dia": "2026-04-10", "sensor": "ARES", "pendentes": 10}, {"dia": "2026-04-10", "sensor": "Shield", "pendentes": 1}, {"dia": "2026-04-10", "sensor": "SYOS", "pendentes": 210}, {"dia": "2026-04-11", "sensor": "Shield", "pendentes": 1}, {"dia": "2026-04-11", "sensor": "SYOS", "pendentes": 3}, {"dia": "2026-04-13", "sensor": "SYOS", "pendentes": 3}, {"dia": "2026-04-14", "sensor": "ARES", "pendentes": 5}, {"dia": "2026-04-14", "sensor": "SYOS", "pendentes": 31}, {"dia": "2026-04-15", "sensor": "ARES", "pendentes": 9}, {"dia": "2026-04-15", "sensor": "Shield", "pendentes": 9}, {"dia": "2026-04-15", "sensor": "SYOS", "pendentes": 13}, {"dia": "2026-04-16", "sensor": "Sensor web", "pendentes": 4}, {"dia": "2026-04-16", "sensor": "Shield", "pendentes": 28}, {"dia": "2026-04-16", "sensor": "SYOS", "pendentes": 3}, {"dia": "2026-04-17", "sensor": "Sensor web", "pendentes": 130}, {"dia": "2026-04-17", "sensor": "SYOS", "pendentes": 60}, {"dia": "2026-04-18", "sensor": "SYOS", "pendentes": 3}, {"dia": "2026-04-20", "sensor": "SYOS", "pendentes": 1}], "sensor_daily_stats": [{"dia": "2026-04-10", "sensor": "ARES", "thermal_class": "congelado", "loggers_entregues": 19, "loggers_inseridos": 9, "loggers_pendentes": 10}, {"dia": "2026-04-10", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 285, "loggers_inseridos": 285, "loggers_pendentes": 0}, {"dia": "2026-04-10", "sensor": "Shield", "thermal_class": "congelado", "loggers_entregues": 1, "loggers_inseridos": 0, "loggers_pendentes": 1}, {"dia": "2026-04-10", "sensor": "SYOS", "thermal_class": "congelado", "loggers_entregues": 5, "loggers_inseridos": 0, "loggers_pendentes": 5}, {"dia": "2026-04-10", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 205, "loggers_inseridos": 0, "loggers_pendentes": 205}, {"dia": "2026-04-11", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 2, "loggers_inseridos": 2, "loggers_pendentes": 0}, {"dia": "2026-04-11", "sensor": "Shield", "thermal_class": "congelado", "loggers_entregues": 1, "loggers_inseridos": 0, "loggers_pendentes": 1}, {"dia": "2026-04-11", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 3, "loggers_inseridos": 0, "loggers_pendentes": 3}, {"dia": "2026-04-13", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 82, "loggers_inseridos": 82, "loggers_pendentes": 0}, {"dia": "2026-04-13", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 4, "loggers_inseridos": 1, "loggers_pendentes": 3}, {"dia": "2026-04-14", "sensor": "ARES", "thermal_class": "congelado", "loggers_entregues": 12, "loggers_inseridos": 7, "loggers_pendentes": 5}, {"dia": "2026-04-14", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 213, "loggers_inseridos": 213, "loggers_pendentes": 0}, {"dia": "2026-04-14", "sensor": "Sensor web", "thermal_class": "congelado", "loggers_entregues": 10, "loggers_inseridos": 10, "loggers_pendentes": 0}, {"dia": "2026-04-14", "sensor": "SYOS", "thermal_class": "congelado", "loggers_entregues": 5, "loggers_inseridos": 0, "loggers_pendentes": 5}, {"dia": "2026-04-14", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 38, "loggers_inseridos": 12, "loggers_pendentes": 26}, {"dia": "2026-04-15", "sensor": "ARES", "thermal_class": "congelado", "loggers_entregues": 9, "loggers_inseridos": 0, "loggers_pendentes": 9}, {"dia": "2026-04-15", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 42, "loggers_inseridos": 42, "loggers_pendentes": 0}, {"dia": "2026-04-15", "sensor": "Sensor web", "thermal_class": "congelado", "loggers_entregues": 130, "loggers_inseridos": 130, "loggers_pendentes": 0}, {"dia": "2026-04-15", "sensor": "Shield", "thermal_class": "congelado", "loggers_entregues": 22, "loggers_inseridos": 13, "loggers_pendentes": 9}, {"dia": "2026-04-15", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 15, "loggers_inseridos": 2, "loggers_pendentes": 13}, {"dia": "2026-04-16", "sensor": "ARES", "thermal_class": "congelado", "loggers_entregues": 1, "loggers_inseridos": 1, "loggers_pendentes": 0}, {"dia": "2026-04-16", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 224, "loggers_inseridos": 224, "loggers_pendentes": 0}, {"dia": "2026-04-16", "sensor": "Sensor web", "thermal_class": "congelado", "loggers_entregues": 142, "loggers_inseridos": 138, "loggers_pendentes": 4}, {"dia": "2026-04-16", "sensor": "Shield", "thermal_class": "congelado", "loggers_entregues": 28, "loggers_inseridos": 0, "loggers_pendentes": 28}, {"dia": "2026-04-16", "sensor": "SYOS", "thermal_class": "congelado", "loggers_entregues": 2, "loggers_inseridos": 0, "loggers_pendentes": 2}, {"dia": "2026-04-16", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 1, "loggers_inseridos": 0, "loggers_pendentes": 1}, {"dia": "2026-04-17", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 64, "loggers_inseridos": 64, "loggers_pendentes": 0}, {"dia": "2026-04-17", "sensor": "Sensor web", "thermal_class": "congelado", "loggers_entregues": 130, "loggers_inseridos": 0, "loggers_pendentes": 130}, {"dia": "2026-04-17", "sensor": "SYOS", "thermal_class": "congelado", "loggers_entregues": 2, "loggers_inseridos": 0, "loggers_pendentes": 2}, {"dia": "2026-04-17", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 58, "loggers_inseridos": 0, "loggers_pendentes": 58}, {"dia": "2026-04-18", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 40, "loggers_inseridos": 37, "loggers_pendentes": 3}, {"dia": "2026-04-20", "sensor": "ARES", "thermal_class": "refrigerado", "loggers_entregues": 18, "loggers_inseridos": 18, "loggers_pendentes": 0}, {"dia": "2026-04-20", "sensor": "SYOS", "thermal_class": "refrigerado", "loggers_entregues": 1, "loggers_inseridos": 0, "loggers_pendentes": 1}], "order_daily_stats": [{"dia": "2026-04-10", "sensor": "ARES", "thermal_class": "congelado", "pedidos_entregues": 6, "pedidos_inseridos": 6}, {"dia": "2026-04-10", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 32, "pedidos_inseridos": 32}, {"dia": "2026-04-10", "sensor": "Shield", "thermal_class": "congelado", "pedidos_entregues": 1, "pedidos_inseridos": 0}, {"dia": "2026-04-10", "sensor": "SYOS", "thermal_class": "congelado", "pedidos_entregues": 3, "pedidos_inseridos": 1}, {"dia": "2026-04-10", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 24, "pedidos_inseridos": 6}, {"dia": "2026-04-11", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 2, "pedidos_inseridos": 2}, {"dia": "2026-04-11", "sensor": "Shield", "thermal_class": "congelado", "pedidos_entregues": 1, "pedidos_inseridos": 0}, {"dia": "2026-04-11", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 3, "pedidos_inseridos": 1}, {"dia": "2026-04-13", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 13, "pedidos_inseridos": 13}, {"dia": "2026-04-13", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 4, "pedidos_inseridos": 1}, {"dia": "2026-04-14", "sensor": "ARES", "thermal_class": "congelado", "pedidos_entregues": 12, "pedidos_inseridos": 7}, {"dia": "2026-04-14", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 66, "pedidos_inseridos": 66}, {"dia": "2026-04-14", "sensor": "Sensor web", "thermal_class": "congelado", "pedidos_entregues": 1, "pedidos_inseridos": 1}, {"dia": "2026-04-14", "sensor": "SYOS", "thermal_class": "congelado", "pedidos_entregues": 1, "pedidos_inseridos": 1}, {"dia": "2026-04-14", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 22, "pedidos_inseridos": 8}, {"dia": "2026-04-15", "sensor": "ARES", "thermal_class": "congelado", "pedidos_entregues": 7, "pedidos_inseridos": 0}, {"dia": "2026-04-15", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 21, "pedidos_inseridos": 21}, {"dia": "2026-04-15", "sensor": "Sensor web", "thermal_class": "congelado", "pedidos_entregues": 2, "pedidos_inseridos": 2}, {"dia": "2026-04-15", "sensor": "Shield", "thermal_class": "congelado", "pedidos_entregues": 2, "pedidos_inseridos": 2}, {"dia": "2026-04-15", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 9, "pedidos_inseridos": 2}, {"dia": "2026-04-16", "sensor": "ARES", "thermal_class": "congelado", "pedidos_entregues": 1, "pedidos_inseridos": 1}, {"dia": "2026-04-16", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 38, "pedidos_inseridos": 38}, {"dia": "2026-04-16", "sensor": "Sensor web", "thermal_class": "congelado", "pedidos_entregues": 4, "pedidos_inseridos": 4}, {"dia": "2026-04-16", "sensor": "Shield", "thermal_class": "congelado", "pedidos_entregues": 1, "pedidos_inseridos": 1}, {"dia": "2026-04-16", "sensor": "SYOS", "thermal_class": "congelado", "pedidos_entregues": 1, "pedidos_inseridos": 1}, {"dia": "2026-04-16", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 1, "pedidos_inseridos": 0}, {"dia": "2026-04-17", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 44, "pedidos_inseridos": 44}, {"dia": "2026-04-17", "sensor": "Sensor web", "thermal_class": "congelado", "pedidos_entregues": 3, "pedidos_inseridos": 0}, {"dia": "2026-04-17", "sensor": "SYOS", "thermal_class": "congelado", "pedidos_entregues": 2, "pedidos_inseridos": 0}, {"dia": "2026-04-17", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 1, "pedidos_inseridos": 0}, {"dia": "2026-04-18", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 1, "pedidos_inseridos": 1}, {"dia": "2026-04-20", "sensor": "ARES", "thermal_class": "refrigerado", "pedidos_entregues": 18, "pedidos_inseridos": 18}, {"dia": "2026-04-20", "sensor": "SYOS", "thermal_class": "refrigerado", "pedidos_entregues": 1, "pedidos_inseridos": 0}], "latency": {"pedidos_comparados": 261, "pedidos_validos": 258, "pedidos_negativos": 3, "avg_horas": 22.010566020671835, "avg_dias": 0.9171069175279931, "p50_horas": 4.35579291666667, "p50_dias": 0.18149137152777792}, "delivery_launch": {"available": true, "pedidos_com_entrega_e_lancamento": 2358, "pedidos_validos": 2348, "pedidos_negativos": 10, "media_horas": 15.01, "media_dias": 0.63, "daily": [{"dia": "2026-04-10", "pedidos_validos": 413, "media_horas": 31.31}, {"dia": "2026-04-11", "pedidos_validos": 30, "media_horas": 19.38}, {"dia": "2026-04-12", "pedidos_validos": 12, "media_horas": 19.66}, {"dia": "2026-04-13", "pedidos_validos": 363, "media_horas": 9.0}, {"dia": "2026-04-14", "pedidos_validos": 396, "media_horas": 8.65}, {"dia": "2026-04-15", "pedidos_validos": 340, "media_horas": 9.92}, {"dia": "2026-04-16", "pedidos_validos": 300, "media_horas": 9.24}, {"dia": "2026-04-17", "pedidos_validos": 320, "media_horas": 25.01}, {"dia": "2026-04-18", "pedidos_validos": 14, "media_horas": 18.12}, {"dia": "2026-04-20", "pedidos_validos": 160, "media_horas": 2.46}], "error": ""}};
+    const fmt = (n) => new Intl.NumberFormat('pt-BR').format(n);
+    const fmtPct = (n) => `${n.toFixed(1)}%`;
+
+    document.getElementById('subtitle').textContent =
+      `Baseado em data de entrega desde ${payload.start_date} | Atualizado em ${payload.generated_at}`;
+    document.getElementById('gen_at').textContent = payload.generated_at;
+    const allDaily = payload.daily || [];
+    const allDlDaily = (payload.delivery_launch && payload.delivery_launch.daily) ? payload.delivery_launch.daily : [];
+    const allSensorPendingDaily = payload.sensor_pending_daily || [];
+    const allSensorDailyStats = payload.sensor_daily_stats || [];
+    const allOrderDailyStats = payload.order_daily_stats || [];
+
+    function drawGroupedBars(svgId, labels, aVals, bVals, colors) {
+      const svg = document.getElementById(svgId);
+      const width = 1080;
+      const height = 260;
+      const pad = { top: 20, right: 12, bottom: 44, left: 46 };
+      const cw = width - pad.left - pad.right;
+      const ch = height - pad.top - pad.bottom;
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.innerHTML = '';
+      if (!labels || labels.length === 0) {
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', width / 2);
+        t.setAttribute('y', height / 2);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('font-size', '14');
+        t.setAttribute('fill', '#5d7083');
+        t.textContent = 'Sem dados no período';
+        svg.appendChild(t);
+        return;
+      }
+
+      const maxVal = Math.max(1, ...aVals, ...bVals);
+      const groupW = cw / labels.length;
+      const barW = Math.max(6, Math.min(20, groupW * 0.26));
+      const xAxisY = pad.top + ch;
+
+      const axis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      axis.setAttribute('x1', pad.left);
+      axis.setAttribute('y1', xAxisY);
+      axis.setAttribute('x2', pad.left + cw);
+      axis.setAttribute('y2', xAxisY);
+      axis.setAttribute('stroke', '#91a1b2');
+      axis.setAttribute('stroke-width', '1');
+      svg.appendChild(axis);
+
+      for (let i = 0; i < 5; i++) {
+        const y = pad.top + (ch * i / 4);
+        const v = Math.round(maxVal * (1 - i / 4));
+        const grid = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        grid.setAttribute('x1', pad.left);
+        grid.setAttribute('y1', y);
+        grid.setAttribute('x2', pad.left + cw);
+        grid.setAttribute('y2', y);
+        grid.setAttribute('stroke', '#e6edf5');
+        grid.setAttribute('stroke-width', '1');
+        svg.appendChild(grid);
+
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', pad.left - 8);
+        txt.setAttribute('y', y + 4);
+        txt.setAttribute('text-anchor', 'end');
+        txt.setAttribute('font-size', '11');
+        txt.setAttribute('fill', '#607284');
+        txt.textContent = new Intl.NumberFormat('pt-BR').format(v);
+        svg.appendChild(txt);
+      }
+
+      labels.forEach((lb, i) => {
+        const gx = pad.left + i * groupW + groupW * 0.5;
+        const a = aVals[i];
+        const b = bVals[i];
+        const ah = (a / maxVal) * ch;
+        const bh = (b / maxVal) * ch;
+
+        const ra = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        ra.setAttribute('x', gx - barW - 2);
+        ra.setAttribute('y', xAxisY - ah);
+        ra.setAttribute('width', barW);
+        ra.setAttribute('height', ah);
+        ra.setAttribute('rx', '3');
+        ra.setAttribute('fill', colors[0]);
+        svg.appendChild(ra);
+        if (a > 0) {
+          const la = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          la.setAttribute('x', gx - barW/2 - 2);
+          la.setAttribute('y', Math.max(12, xAxisY - ah - 4));
+          la.setAttribute('text-anchor', 'middle');
+          la.setAttribute('font-size', '12');
+          la.setAttribute('font-weight', '600');
+          la.setAttribute('fill', '#2f3e4d');
+          la.textContent = new Intl.NumberFormat('pt-BR').format(a);
+          svg.appendChild(la);
+        }
+
+        const rb = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rb.setAttribute('x', gx + 2);
+        rb.setAttribute('y', xAxisY - bh);
+        rb.setAttribute('width', barW);
+        rb.setAttribute('height', bh);
+        rb.setAttribute('rx', '3');
+        rb.setAttribute('fill', colors[1]);
+        svg.appendChild(rb);
+        if (b > 0) {
+          const lbv = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          lbv.setAttribute('x', gx + barW/2 + 2);
+          lbv.setAttribute('y', Math.max(12, xAxisY - bh - 4));
+          lbv.setAttribute('text-anchor', 'middle');
+          lbv.setAttribute('font-size', '12');
+          lbv.setAttribute('font-weight', '600');
+          lbv.setAttribute('fill', '#2f3e4d');
+          lbv.textContent = new Intl.NumberFormat('pt-BR').format(b);
+          svg.appendChild(lbv);
+        }
+
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', gx);
+        t.setAttribute('y', xAxisY + 14);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('font-size', '12');
+        t.setAttribute('fill', '#5d7083');
+        const [y, m, d] = lb.split('-');
+        t.textContent = `${d}/${m}`;
+        svg.appendChild(t);
+      });
+    }
+
+    function drawSingleBars(svgId, labels, vals, color) {
+      const svg = document.getElementById(svgId);
+      const width = 1080;
+      const height = 260;
+      const pad = { top: 20, right: 12, bottom: 44, left: 52 };
+      const cw = width - pad.left - pad.right;
+      const ch = height - pad.top - pad.bottom;
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.innerHTML = '';
+      if (!labels || labels.length === 0) {
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', width / 2);
+        t.setAttribute('y', height / 2);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('font-size', '14');
+        t.setAttribute('fill', '#5d7083');
+        t.textContent = 'Sem dados no período';
+        svg.appendChild(t);
+        return;
+      }
+
+      const maxVal = Math.max(1, ...vals);
+      const groupW = cw / labels.length;
+      const barW = Math.max(10, Math.min(26, groupW * 0.45));
+      const xAxisY = pad.top + ch;
+
+      const axis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      axis.setAttribute('x1', pad.left);
+      axis.setAttribute('y1', xAxisY);
+      axis.setAttribute('x2', pad.left + cw);
+      axis.setAttribute('y2', xAxisY);
+      axis.setAttribute('stroke', '#91a1b2');
+      axis.setAttribute('stroke-width', '1');
+      svg.appendChild(axis);
+
+      for (let i = 0; i < 5; i++) {
+        const y = pad.top + (ch * i / 4);
+        const v = maxVal * (1 - i / 4);
+        const grid = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        grid.setAttribute('x1', pad.left);
+        grid.setAttribute('y1', y);
+        grid.setAttribute('x2', pad.left + cw);
+        grid.setAttribute('y2', y);
+        grid.setAttribute('stroke', '#e6edf5');
+        grid.setAttribute('stroke-width', '1');
+        svg.appendChild(grid);
+
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', pad.left - 8);
+        txt.setAttribute('y', y + 4);
+        txt.setAttribute('text-anchor', 'end');
+        txt.setAttribute('font-size', '11');
+        txt.setAttribute('fill', '#607284');
+        txt.textContent = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(v);
+        svg.appendChild(txt);
+      }
+
+      labels.forEach((lb, i) => {
+        const gx = pad.left + i * groupW + groupW * 0.5;
+        const v = vals[i];
+        const h = (v / maxVal) * ch;
+
+        const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        r.setAttribute('x', gx - barW/2);
+        r.setAttribute('y', xAxisY - h);
+        r.setAttribute('width', barW);
+        r.setAttribute('height', h);
+        r.setAttribute('rx', '3');
+        r.setAttribute('fill', color);
+        svg.appendChild(r);
+
+        if (v > 0) {
+          const lv = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          lv.setAttribute('x', gx);
+          lv.setAttribute('y', Math.max(12, xAxisY - h - 4));
+          lv.setAttribute('text-anchor', 'middle');
+          lv.setAttribute('font-size', '12');
+          lv.setAttribute('font-weight', '600');
+          lv.setAttribute('fill', '#2f3e4d');
+          lv.textContent = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(v);
+          svg.appendChild(lv);
+        }
+
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', gx);
+        t.setAttribute('y', xAxisY + 14);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('font-size', '12');
+        t.setAttribute('fill', '#5d7083');
+        const [y, m, d] = lb.split('-');
+        t.textContent = `${d}/${m}`;
+        svg.appendChild(t);
+      });
+    }
+
+    const dateUniverse = [
+      ...new Set([
+        ...allDaily.map(x => x.dia),
+        ...allDlDaily.map(x => x.dia),
+        ...allSensorPendingDaily.map(x => x.dia),
+        ...allSensorDailyStats.map(x => x.dia),
+        ...allOrderDailyStats.map(x => x.dia),
+      ]),
+    ].sort();
+    const minDate = dateUniverse.length ? dateUniverse[0] : '';
+    const maxDate = dateUniverse.length ? dateUniverse[dateUniverse.length - 1] : '';
+
+    const fltStart = document.getElementById('flt_start');
+    const fltEnd = document.getElementById('flt_end');
+    const fltSensor = document.getElementById('flt_sensor');
+    const fltThermal = document.getElementById('flt_thermal');
+    const btnApply = document.getElementById('btn_apply');
+    const btnReset = document.getElementById('btn_reset');
+    const btnToday = document.getElementById('btn_today');
+    const filterState = document.getElementById('filter_state');
+    const sensorLabelMap = { all: 'Todos', ares: 'ARES', syos: 'SYOS', shield: 'Shield', web: 'Sensor web' };
+    const thermalLabelMap = { all: 'Todos', refrigerado: 'Refrigerado', congelado: 'Congelado' };
+
+    fltStart.min = minDate;
+    fltStart.max = maxDate;
+    fltEnd.min = minDate;
+    fltEnd.max = maxDate;
+    fltStart.value = minDate;
+    fltEnd.value = maxDate;
+
+    function toIsoDate(value) {
+      if (!value) return '';
+      const v = String(value).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+      const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return '';
+    }
+
+    function formatDateBr(iso) {
+      if (!iso) return '-';
+      const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return iso;
+      return `${m[3]}/${m[2]}/${m[1]}`;
+    }
+
+    function inRange(dia, start, end) {
+      if (start && dia < start) return false;
+      if (end && dia > end) return false;
+      return true;
+    }
+
+    function sumBy(items, key) {
+      return items.reduce((acc, item) => acc + (Number(item[key]) || 0), 0);
+    }
+
+    function weightedAvg(items, valKey, weightKey) {
+      let num = 0;
+      let den = 0;
+      for (const item of items) {
+        const v = item[valKey];
+        const w = Number(item[weightKey]) || 0;
+        if (v == null || w <= 0) continue;
+        num += Number(v) * w;
+        den += w;
+      }
+      return den > 0 ? (num / den) : null;
+    }
+
+    function setSensorSections(mode) {
+      const map = {
+        ares: document.getElementById('secLatencyAres'),
+        syos: document.getElementById('secLatencySyos'),
+        shield: document.getElementById('secLatencyShield'),
+        web: document.getElementById('secLatencyWeb'),
+      };
+      for (const [k, el] of Object.entries(map)) {
+        if (!el) continue;
+        el.style.display = (mode === 'all' || mode === k) ? '' : 'none';
+      }
+    }
+
+    function sensorNameToKey(name) {
+      const v = String(name || '').trim().toUpperCase();
+      if (v === 'ARES') return 'ares';
+      if (v === 'SYOS') return 'syos';
+      if (v === 'SHIELD') return 'shield';
+      if (v === 'SENSOR WEB') return 'web';
+      return 'all';
+    }
+
+    function thermalNameToKey(name) {
+      const v = String(name || '').trim().toLowerCase();
+      if (v === 'refrigerado') return 'refrigerado';
+      if (v === 'congelado') return 'congelado';
+      return 'all';
+    }
+
+    function applyFilters() {
+      let start = toIsoDate(fltStart.value) || minDate;
+      let end = toIsoDate(fltEnd.value) || maxDate;
+      const sensorMode = fltSensor.value || 'all';
+      const thermalMode = fltThermal.value || 'all';
+      if (start && end && start > end) {
+        const tmp = start;
+        start = end;
+        end = tmp;
+        fltStart.value = start;
+        fltEnd.value = end;
+      }
+
+      const daily = allDaily.filter(x => inRange(x.dia, start, end));
+      const dlDaily = allDlDaily.filter(x => inRange(x.dia, start, end));
+      const sensorStats = allSensorDailyStats.filter(
+        x =>
+          inRange(x.dia, start, end) &&
+          (sensorMode === 'all' || sensorNameToKey(x.sensor) === sensorMode) &&
+          (thermalMode === 'all' || thermalNameToKey(x.thermal_class) === thermalMode)
+      );
+      const orderStats = allOrderDailyStats.filter(
+        x =>
+          inRange(x.dia, start, end) &&
+          (sensorMode === 'all' || sensorNameToKey(x.sensor) === sensorMode) &&
+          (thermalMode === 'all' || thermalNameToKey(x.thermal_class) === thermalMode)
+      );
+
+      const orderByDay = new Map();
+      for (const row of orderStats) {
+        const k = row.dia;
+        if (!orderByDay.has(k)) {
+          orderByDay.set(k, { ent: 0, ins: 0 });
+        }
+        const agg = orderByDay.get(k);
+        agg.ent += Number(row.pedidos_entregues) || 0;
+        agg.ins += Number(row.pedidos_inseridos) || 0;
+      }
+      // Mantém o consolidado original quando nenhum filtro específico de logger/faixa está ativo.
+      if (sensorMode === 'all' && thermalMode === 'all') {
+        orderByDay.clear();
+        for (const row of daily) {
+          orderByDay.set(row.dia, {
+            ent: Number(row.pedidos_entregues) || 0,
+            ins: Number(row.pedidos_inseridos) || 0,
+          });
+        }
+      }
+      let pedidos_entregues_total = 0;
+      let pedidos_inseridos_total = 0;
+      for (const v of orderByDay.values()) {
+        pedidos_entregues_total += v.ent;
+        pedidos_inseridos_total += v.ins;
+      }
+
+      const loggerByDay = new Map();
+      for (const row of sensorStats) {
+        const k = row.dia;
+        if (!loggerByDay.has(k)) {
+          loggerByDay.set(k, { ent: 0, ins: 0, pen: 0 });
+        }
+        const agg = loggerByDay.get(k);
+        agg.ent += Number(row.loggers_entregues) || 0;
+        agg.ins += Number(row.loggers_inseridos) || 0;
+        agg.pen += Number(row.loggers_pendentes) || 0;
+      }
+      let loggers_entregues_total = 0;
+      let loggers_inseridos_total = 0;
+      let loggers_pendentes_total = 0;
+      for (const v of loggerByDay.values()) {
+        loggers_entregues_total += v.ent;
+        loggers_inseridos_total += v.ins;
+        loggers_pendentes_total += v.pen;
+      }
+      const pedidos_pendentes_total = pedidos_entregues_total - pedidos_inseridos_total;
+      const pedidos_pct = pedidos_entregues_total > 0 ? (pedidos_inseridos_total / pedidos_entregues_total) * 100 : 0;
+      const loggers_pct = loggers_entregues_total > 0 ? (loggers_inseridos_total / loggers_entregues_total) * 100 : 0;
+
+      document.getElementById('p_ent').textContent = fmt(pedidos_entregues_total);
+      document.getElementById('p_ins').textContent = fmt(pedidos_inseridos_total);
+      document.getElementById('l_ent').textContent = fmt(loggers_entregues_total);
+      document.getElementById('l_ins').textContent = fmt(loggers_inseridos_total);
+      document.getElementById('p_pen').textContent = fmt(Math.max(0, pedidos_pendentes_total));
+      document.getElementById('l_pen').textContent = fmt(Math.max(0, loggers_pendentes_total));
+      document.getElementById('p_pct').textContent = fmtPct(pedidos_pct);
+      document.getElementById('l_pct').textContent = fmtPct(loggers_pct);
+      document.getElementById('p_fill').style.width = `${Math.max(0, Math.min(100, pedidos_pct))}%`;
+      document.getElementById('l_fill').style.width = `${Math.max(0, Math.min(100, loggers_pct))}%`;
+
+      const pendBySensor = { 'ARES': 0, 'SYOS': 0, 'Shield': 0, 'Sensor web': 0 };
+      for (const row of sensorStats) {
+        if (!pendBySensor.hasOwnProperty(row.sensor)) continue;
+        pendBySensor[row.sensor] += Number(row.loggers_pendentes) || 0;
+      }
+      document.getElementById('pend_ares').textContent = fmt(pendBySensor['ARES']);
+      document.getElementById('pend_syos').textContent = fmt(pendBySensor['SYOS']);
+      document.getElementById('pend_shield').textContent = fmt(pendBySensor['Shield']);
+      document.getElementById('pend_web').textContent = fmt(pendBySensor['Sensor web']);
+
+      const avgPedidoInsert = weightedAvg(daily, 'avg_horas_pedidos', 'pedidos_inseridos');
+      document.getElementById('lat_avg_h').textContent = avgPedidoInsert == null ? 'N/D' : avgPedidoInsert.toFixed(1);
+
+      const avgDl = weightedAvg(dlDaily, 'media_horas', 'pedidos_validos');
+      const dlValid = sumBy(dlDaily, 'pedidos_validos');
+      document.getElementById('dl_avg_h').textContent = avgDl == null ? 'N/D' : avgDl.toFixed(2);
+      document.getElementById('dl_valid').textContent = dlDaily.length ? fmt(dlValid) : 'N/D';
+      const dlStatus = document.getElementById('dl_status');
+      if (dlStatus) {
+        if (!payload.delivery_launch || !payload.delivery_launch.available) {
+          const err = (payload.delivery_launch && payload.delivery_launch.error) ? String(payload.delivery_launch.error) : '';
+          dlStatus.textContent = err
+            ? `Sem dados do SQL Server: ${err.slice(0, 180)}`
+            : 'Sem dados do SQL Server para este card.';
+        } else if (dlDaily.length === 0) {
+          dlStatus.textContent = 'Sem dados desse indicador no período selecionado.';
+        } else {
+          dlStatus.textContent = '';
+        }
+      }
+
+      const labels = [...new Set([
+        ...Array.from(orderByDay.keys()),
+        ...Array.from(loggerByDay.keys()),
+      ])].sort();
+      const loggerLabels = labels;
+      const pedidoEntVals = labels.map(d => (orderByDay.get(d)?.ent || 0));
+      const pedidoInsVals = labels.map(d => (orderByDay.get(d)?.ins || 0));
+      const loggerEntVals = loggerLabels.map(d => (loggerByDay.get(d)?.ent || 0));
+      const loggerInsVals = loggerLabels.map(d => (loggerByDay.get(d)?.ins || 0));
+      const h2Loggers = document.getElementById('h2_loggers');
+      if (h2Loggers) {
+        const sensorText = sensorLabelMap[sensorMode] || sensorMode;
+        const thermalText = thermalLabelMap[thermalMode] || thermalMode;
+        h2Loggers.textContent = `Loggers por dia (${sensorText} | ${thermalText}): entregues x inseridos`;
+      }
+      drawGroupedBars(
+        'chartPedidos',
+        labels,
+        pedidoEntVals,
+        pedidoInsVals,
+        ['#2563eb', '#0ea5e9']
+      );
+      drawGroupedBars(
+        'chartLoggers',
+        loggerLabels,
+        loggerEntVals,
+        loggerInsVals,
+        ['#1f9d7a', '#65c7ae']
+      );
+
+      const dlLabels = dlDaily.map(x => x.dia);
+      drawSingleBars(
+        'chartDeliveryLaunch',
+        dlLabels,
+        dlDaily.map(x => x.media_horas == null ? 0 : x.media_horas),
+        '#1e40af'
+      );
+      const dailyLabels = daily.map(x => x.dia);
+      drawSingleBars(
+        'chartLatency',
+        dailyLabels,
+        daily.map(x => x.avg_horas_pedidos == null ? 0 : x.avg_horas_pedidos),
+        '#2563eb'
+      );
+      drawSingleBars(
+        'chartLatencyAres',
+        dailyLabels,
+        daily.map(x => x.avg_horas_itens_ares == null ? 0 : x.avg_horas_itens_ares),
+        '#1d4ed8'
+      );
+      drawSingleBars(
+        'chartLatencySyos',
+        dailyLabels,
+        daily.map(x => x.avg_horas_itens_syos == null ? 0 : x.avg_horas_itens_syos),
+        '#0f766e'
+      );
+      drawSingleBars(
+        'chartLatencyShield',
+        dailyLabels,
+        daily.map(x => x.avg_horas_itens_shield == null ? 0 : x.avg_horas_itens_shield),
+        '#b45309'
+      );
+      drawSingleBars(
+        'chartLatencyWeb',
+        dailyLabels,
+        daily.map(x => x.avg_horas_itens_sensor_web == null ? 0 : x.avg_horas_itens_sensor_web),
+        '#475569'
+      );
+
+      setSensorSections(sensorMode);
+      if (filterState) {
+        const sensorLabel = sensorLabelMap[sensorMode] || 'Todos';
+        const thermalLabel = thermalLabelMap[thermalMode] || 'Todos';
+        filterState.textContent = `Filtro ativo: ${formatDateBr(start)} a ${formatDateBr(end)} | Sensor: ${sensorLabel} | Faixa térmica: ${thermalLabel} | Dias com dados: ${labels.length}`;
+      }
+    }
+
+    btnApply.addEventListener('click', applyFilters);
+    btnReset.addEventListener('click', () => {
+      fltStart.value = minDate;
+      fltEnd.value = maxDate;
+      fltSensor.value = 'all';
+      fltThermal.value = 'all';
+      applyFilters();
+    });
+    btnToday.addEventListener('click', () => {
+      const today = (payload.generated_at || '').slice(0, 10);
+      if (today) {
+        fltStart.value = today;
+        fltEnd.value = today;
+      }
+      applyFilters();
+    });
+    fltStart.addEventListener('change', applyFilters);
+    fltEnd.addEventListener('change', applyFilters);
+    fltSensor.addEventListener('change', applyFilters);
+    fltThermal.addEventListener('change', applyFilters);
+
+    applyFilters();
+  </script>
+</body>
+</html>
