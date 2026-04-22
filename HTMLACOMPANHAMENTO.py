@@ -26,6 +26,7 @@ def main() -> int:
         port=int(os.getenv("AURA_DB_PORT", DEFAULT_PORT)),
     )
     start_date = os.getenv("AURA_START_DATE", DEFAULT_START_DATE)
+    end_date = os.getenv("AURA_END_DATE", "").strip() or None
     base_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(base_dir, "HTMLACOMPANHAMENTO.html")
 
@@ -39,10 +40,11 @@ def main() -> int:
                 order_daily_stats_rows,
                 latency_row,
                 delivery_launch,
-            ) = query_data(conn, start_date)
+            ) = query_data(conn, start_date, end_date)
         payload = build_payload(
             rows,
             start_date,
+            end_date,
             sensor_rows,
             sensor_daily_rows,
             sensor_daily_stats_rows,
@@ -58,6 +60,7 @@ def main() -> int:
 
         print(f"arquivo={output_path}")
         print(f"periodo_desde={start_date}")
+        print(f"periodo_ate={end_date or '(sem limite)'}")
         return 0
     except Exception as exc:
         print(f"erro={exc}")
