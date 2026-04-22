@@ -8,13 +8,14 @@ from gerar_dashboard_entregas import (
     DEFAULT_HOST,
     DEFAULT_PASSWORD,
     DEFAULT_PORT,
-    DEFAULT_START_DATE,
     DEFAULT_USER,
     build_payload,
     get_connection,
     query_data,
     render_html,
 )
+
+DEFAULT_START_DATE_HTML = "2025-12-04"
 
 
 def main() -> int:
@@ -26,7 +27,7 @@ def main() -> int:
         password=os.getenv("AURA_DB_PASSWORD", DEFAULT_PASSWORD),
         port=int(os.getenv("AURA_DB_PORT", DEFAULT_PORT)),
     )
-    start_date = os.getenv("AURA_START_DATE", DEFAULT_START_DATE)
+    start_date = os.getenv("AURA_START_DATE", DEFAULT_START_DATE_HTML)
     end_date_env = os.getenv("AURA_END_DATE", "").strip()
     end_date = end_date_env or datetime.now().strftime("%Y-%m-%d")
     base_dir = os.path.dirname(os.path.abspath(__file__))
