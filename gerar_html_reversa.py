@@ -476,12 +476,22 @@ function renderChart(id, traces, layout){{
     el.innerHTML = '<div class="chart-empty">Sem dados no período selecionado</div>';
     return;
   }}
-  try {{
-    Plotly.newPlot(el, traces, layout, cfg);
-  }} catch (err) {{
-    console.error(`Falha ao renderizar ${{id}}:`, err);
-    el.innerHTML = '<div class="chart-empty">Não foi possível carregar este gráfico</div>';
+  if (window.Plotly && Plotly.purge) {{
+    Plotly.purge(el);
   }}
+  el.innerHTML = "";
+  requestAnimationFrame(() => {{
+    Promise.resolve(Plotly.newPlot(el, traces, layout, cfg))
+      .then(() => {{
+        if (Plotly.Plots && Plotly.Plots.resize) {{
+          Plotly.Plots.resize(el);
+        }}
+      }})
+      .catch((err) => {{
+        console.error(`Falha ao renderizar ${{id}}:`, err);
+        el.innerHTML = '<div class="chart-empty">Não foi possível carregar este gráfico</div>';
+      }});
+  }});
 }}
 
 function renderAll(days){{
@@ -515,6 +525,15 @@ function switchPeriod(days){{
   document.getElementById("btn-"+days).classList.add("active");
   renderAll(days);
 }}
+
+window.addEventListener("resize", () => {{
+  ["chart-ag", "chart-pend", "chart-trend", "chart-uf", "chart-rec7"].forEach((id) => {{
+    const el = document.getElementById(id);
+    if (el && Plotly.Plots && Plotly.Plots.resize) {{
+      Plotly.Plots.resize(el);
+    }}
+  }});
+}});
 
 // Initial render
 renderAll(PERIODO_PAD);
