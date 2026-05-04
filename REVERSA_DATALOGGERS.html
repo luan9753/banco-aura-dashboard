@@ -47,6 +47,9 @@ body{background:radial-gradient(900px 260px at 0% -10%,#13233f 0%,rgba(19,35,63,
 .charts-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:8px;}
 .chart-box{background:#141b26;border:1px solid #24344d;border-radius:12px;padding:10px;}
 .chart-title{font-size:.92rem;font-weight:700;color:#dceafe;margin-bottom:4px;padding:0 4px;}
+.chart-empty{display:flex;align-items:center;justify-content:center;min-height:220px;
+  border:1px dashed #2b466b;border-radius:10px;color:#7f93ad;
+  background:rgba(19,36,60,.35);font-size:.9rem;text-align:center;padding:12px;}
 footer{margin-top:20px;font-size:.75rem;color:#556070;text-align:right;}
 @media(max-width:1200px){
   .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -63,7 +66,7 @@ footer{margin-top:20px;font-size:.75rem;color:#556070;text-align:right;}
 
 <div class="hero-wrap">
   <h1 class="hero-title">Controle de Reversa de Dataloggers</h1>
-  <div class="hero-sub">Gerado em: 04/05/2026 12:02 &nbsp;·&nbsp; VTC LOG — BI Qualidade</div>
+  <div class="hero-sub">Gerado em: 04/05/2026 12:30 &nbsp;·&nbsp; VTC LOG — BI Qualidade</div>
 </div>
 
 <div class="period-bar">
@@ -86,7 +89,7 @@ footer{margin-top:20px;font-size:.75rem;color:#556070;text-align:right;}
 <div class="insight-grid">
   <div class="insight-card"><div class="insight-title">Agente em Atenção</div><div class="insight-text" id="ins-agente">VTCLOG - GRU lidera com 5.551 loggers pendentes.</div></div>
   <div class="insight-card"><div class="insight-title">UF Crítica</div><div class="insight-text" id="ins-uf">UF PI com 100,0% de pendência (405/405).</div></div>
-  <div class="insight-card"><div class="insight-title">Pendência Mais Antiga</div><div class="insight-text" id="ins-antiga">Pedido 547046 · logger  há 28 dias sem retorno.</div></div>
+  <div class="insight-card"><div class="insight-title">Pendência Mais Antiga</div><div class="insight-text" id="ins-antiga">Pedido 548367 · logger  há 28 dias sem retorno.</div></div>
   <div class="insight-card"><div class="insight-title">Retorno Recente</div><div class="insight-text" id="ins-recente">788 loggers recebidos no somatório dos últimos 7 dias.</div></div>
 </div>
 
@@ -126,7 +129,7 @@ footer{margin-top:20px;font-size:.75rem;color:#556070;text-align:right;}
 <footer>Atualizado automaticamente a cada 10 min &nbsp;·&nbsp; VTC LOG — BI Qualidade</footer>
 
 <script>
-const PERIODS_DATA = {"7": {"kpi": {"pedidos": "1.129", "loggers": "8.816", "retornados": "193", "pendentes": "8.623", "taxa_ret": "2,2%", "taxa_pend": "97,8%"}, "insights": {"agente": "VTCLOG - GRU lidera com 1.313 loggers pendentes.", "uf": "UF RS com 100,0% de pendência (489/489).", "antiga": "Pedido 552052 · logger TA0945 há 7 dias sem retorno.", "recente": "638 loggers recebidos no somatório dos últimos 7 dias."}, "charts": {"ag": {"y": ["VTCLOG CNF - CONTAGEM", "AJU - CASSIMIRO TRANSPORTES", "SSA - BELTRANS CARGAS", "CGR - LH TRANSPORTES", "POA - GMB TRANSPORTES E LOGISTICA ME", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "VTCLOG - BSB", "FOR - NT TRANSPORTE LTDA", "", "VTCLOG - REC", "SLZ - REIS CAVALCANTE EXPRESSO", "VTCLOG - GRU"], "x": [138, 152, 157, 162, 183, 213, 213, 227, 240, 280, 295, 1392]}, "pend": {"y": ["CGR - LH TRANSPORTES", "VTCLOG CNF - CONTAGEM", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "AJU - CASSIMIRO TRANSPORTES", "SSA - BELTRANS CARGAS", "POA - GMB TRANSPORTES E LOGISTICA ME", "VTCLOG - BSB", "FOR - NT TRANSPORTE LTDA", "", "SLZ - REIS CAVALCANTE EXPRESSO", "VTCLOG - REC", "VTCLOG - GRU"], "x": [137, 138, 143, 152, 157, 183, 213, 227, 240, 277, 280, 1313]}, "trend": {"x": ["2026-04-27 00:00:00", "2026-05-04 00:00:00"], "y": [897, 7919]}, "uf": {"y": ["AM", "CE", "GO", "PE", "RJ", "BA", "MA", "MG", "RS", "SP"], "x": [233, 236, 246, 288, 404, 408, 475, 477, 489, 830]}, "rec7": {"x": ["28/04", "29/04", "30/04", "01/05", "02/05", "03/05", "04/05"], "y": [134, 230, 26, 0, 239, 6, 3]}}}, "30": {"kpi": {"pedidos": "3.831", "loggers": "26.111", "retornados": "3.792", "pendentes": "22.319", "taxa_ret": "14,5%", "taxa_pend": "85,5%"}, "insights": {"agente": "VTCLOG - GRU lidera com 5.551 loggers pendentes.", "uf": "UF PI com 100,0% de pendência (405/405).", "antiga": "Pedido 547046 · logger  há 28 dias sem retorno.", "recente": "788 loggers recebidos no somatório dos últimos 7 dias."}, "charts": {"ag": {"y": ["GYN - RBR EXPERIENCIA EM TRANSPORTES", "SLZ - REIS CAVALCANTE EXPRESSO", "VTCLOG RIO GALEAO", "VTCLOG - REC", "POA - GMB TRANSPORTES E LOGISTICA ME", "VTCLOG - BSB", "", "SSA - BELTRANS CARGAS", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "FOR - NT TRANSPORTE LTDA", "VTCLOG CNF - CONTAGEM", "VTCLOG - GRU"], "x": [539, 560, 618, 720, 738, 741, 746, 785, 814, 827, 1074, 6346]}, "pend": {"y": ["BEL - SSS EXPRESSO", "VTCLOG RIO GALEAO", "SSA - BELTRANS CARGAS", "POA - GMB TRANSPORTES E LOGISTICA ME", "VTCLOG - BSB", "SLZ - REIS CAVALCANTE EXPRESSO", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "VTCLOG CNF - CONTAGEM", "VTCLOG - REC", "FOR - NT TRANSPORTE LTDA", "", "VTCLOG - GRU"], "x": [402, 478, 500, 512, 540, 542, 606, 617, 659, 673, 746, 5551]}, "trend": {"x": ["2026-04-06 00:00:00", "2026-04-13 00:00:00", "2026-04-20 00:00:00", "2026-04-27 00:00:00", "2026-05-04 00:00:00"], "y": [1524, 6700, 3833, 6135, 7919]}, "uf": {"y": ["PE", "GO", "MA", "SC", "CE", "RJ", "RS", "BA", "MG", "SP"], "x": [889, 893, 995, 1131, 1144, 1357, 1392, 1497, 2277, 2830]}, "rec7": {"x": ["28/04", "29/04", "30/04", "01/05", "02/05", "03/05", "04/05"], "y": [136, 248, 89, 0, 298, 6, 11]}}}, "60": {"kpi": {"pedidos": "7.284", "loggers": "50.589", "retornados": "14.039", "pendentes": "36.550", "taxa_ret": "27,8%", "taxa_pend": "72,2%"}, "insights": {"agente": "VTCLOG - GRU lidera com 12.528 loggers pendentes.", "uf": "UF PA com 93,3% de pendência (1.281/1.373).", "antiga": "Pedido 542757 · logger  há 59 dias sem retorno.", "recente": "881 loggers recebidos no somatório dos últimos 7 dias."}, "charts": {"ag": {"y": ["FLN - TGEX TRANSPORTES E LOCACAO DE VEIC", "GYN - RBR EXPERIENCIA EM TRANSPORTES", "AJU - CASSIMIRO TRANSPORTES", "VTCLOG - BSB", "VTCLOG - REC", "VTCLOG CNF - CONTAGEM", "", "VTCLOG RIO GALEAO", "FOR - NT TRANSPORTE LTDA", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "SSA - BELTRANS CARGAS", "VTCLOG - GRU"], "x": [1111, 1122, 1155, 1275, 1509, 1537, 1575, 1724, 1762, 1944, 1989, 15173]}, "pend": {"y": ["POA - GMB TRANSPORTES E LOGISTICA ME", "THE - TRANSPRESS", "BEL - SSS EXPRESSO", "VTCLOG - REC", "SSA - BELTRANS CARGAS", "VTCLOG - BSB", "VTCLOG CNF - CONTAGEM", "FOR - NT TRANSPORTE LTDA", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "VTCLOG RIO GALEAO", "", "VTCLOG - GRU"], "x": [639, 717, 782, 791, 881, 896, 911, 1007, 1053, 1119, 1575, 12528]}, "trend": {"x": ["2026-03-09 00:00:00", "2026-03-16 00:00:00", "2026-03-23 00:00:00", "2026-03-30 00:00:00", "2026-04-06 00:00:00", "2026-04-13 00:00:00", "2026-04-20 00:00:00", "2026-04-27 00:00:00", "2026-05-04 00:00:00"], "y": [1131, 6001, 6663, 7664, 4543, 6700, 3833, 6135, 7919]}, "uf": {"y": ["GO", "AM", "PE", "SC", "CE", "RS", "RJ", "BA", "MG", "SP"], "x": [1786, 1964, 1965, 2121, 2246, 2716, 3047, 3071, 4362, 6228]}, "rec7": {"x": ["28/04", "29/04", "30/04", "01/05", "02/05", "03/05", "04/05"], "y": [137, 251, 142, 0, 309, 6, 36]}}}};
+const PERIODS_DATA = {"7": {"kpi": {"pedidos": "1.127", "loggers": "8.735", "retornados": "175", "pendentes": "8.560", "taxa_ret": "2,0%", "taxa_pend": "98,0%"}, "insights": {"agente": "VTCLOG - GRU lidera com 1.313 loggers pendentes.", "uf": "UF RS com 100,0% de pendência (489/489).", "antiga": "Pedido 552066 · logger  há 7 dias sem retorno.", "recente": "622 loggers recebidos no somatório dos últimos 7 dias."}, "charts": {"ag": {"y": ["VTCLOG CNF - CONTAGEM", "AJU - CASSIMIRO TRANSPORTES", "SSA - BELTRANS CARGAS", "CGR - LH TRANSPORTES", "POA - GMB TRANSPORTES E LOGISTICA ME", "VTCLOG - BSB", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "SLZ - REIS CAVALCANTE EXPRESSO", "FOR - NT TRANSPORTE LTDA", "", "VTCLOG - REC", "VTCLOG - GRU"], "x": [138, 152, 157, 162, 183, 211, 213, 225, 227, 240, 280, 1392]}, "pend": {"y": ["CGR - LH TRANSPORTES", "VTCLOG CNF - CONTAGEM", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "AJU - CASSIMIRO TRANSPORTES", "SSA - BELTRANS CARGAS", "POA - GMB TRANSPORTES E LOGISTICA ME", "VTCLOG - BSB", "SLZ - REIS CAVALCANTE EXPRESSO", "FOR - NT TRANSPORTE LTDA", "", "VTCLOG - REC", "VTCLOG - GRU"], "x": [137, 138, 143, 152, 157, 183, 211, 225, 227, 240, 280, 1313]}, "trend": {"x": ["2026-04-27 00:00:00", "2026-05-04 00:00:00"], "y": [816, 7919]}, "uf": {"y": ["AM", "CE", "GO", "PE", "RJ", "BA", "MA", "MG", "RS", "SP"], "x": [233, 236, 246, 288, 404, 405, 405, 477, 489, 830]}, "rec7": {"x": ["28/04", "29/04", "30/04", "01/05", "02/05", "03/05", "04/05"], "y": [134, 230, 26, 0, 223, 6, 3]}}}, "30": {"kpi": {"pedidos": "3.831", "loggers": "26.111", "retornados": "3.792", "pendentes": "22.319", "taxa_ret": "14,5%", "taxa_pend": "85,5%"}, "insights": {"agente": "VTCLOG - GRU lidera com 5.551 loggers pendentes.", "uf": "UF PI com 100,0% de pendência (405/405).", "antiga": "Pedido 548367 · logger  há 28 dias sem retorno.", "recente": "788 loggers recebidos no somatório dos últimos 7 dias."}, "charts": {"ag": {"y": ["GYN - RBR EXPERIENCIA EM TRANSPORTES", "SLZ - REIS CAVALCANTE EXPRESSO", "VTCLOG RIO GALEAO", "VTCLOG - REC", "POA - GMB TRANSPORTES E LOGISTICA ME", "VTCLOG - BSB", "", "SSA - BELTRANS CARGAS", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "FOR - NT TRANSPORTE LTDA", "VTCLOG CNF - CONTAGEM", "VTCLOG - GRU"], "x": [539, 560, 618, 720, 738, 741, 746, 785, 814, 827, 1074, 6346]}, "pend": {"y": ["BEL - SSS EXPRESSO", "VTCLOG RIO GALEAO", "SSA - BELTRANS CARGAS", "POA - GMB TRANSPORTES E LOGISTICA ME", "VTCLOG - BSB", "SLZ - REIS CAVALCANTE EXPRESSO", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "VTCLOG CNF - CONTAGEM", "VTCLOG - REC", "FOR - NT TRANSPORTE LTDA", "", "VTCLOG - GRU"], "x": [402, 478, 500, 512, 540, 542, 606, 617, 659, 673, 746, 5551]}, "trend": {"x": ["2026-04-06 00:00:00", "2026-04-13 00:00:00", "2026-04-20 00:00:00", "2026-04-27 00:00:00", "2026-05-04 00:00:00"], "y": [1524, 6700, 3833, 6135, 7919]}, "uf": {"y": ["PE", "GO", "MA", "SC", "CE", "RJ", "RS", "BA", "MG", "SP"], "x": [889, 893, 995, 1131, 1144, 1357, 1392, 1497, 2277, 2830]}, "rec7": {"x": ["28/04", "29/04", "30/04", "01/05", "02/05", "03/05", "04/05"], "y": [136, 248, 89, 0, 298, 6, 11]}}}, "60": {"kpi": {"pedidos": "7.284", "loggers": "50.589", "retornados": "14.039", "pendentes": "36.550", "taxa_ret": "27,8%", "taxa_pend": "72,2%"}, "insights": {"agente": "VTCLOG - GRU lidera com 12.528 loggers pendentes.", "uf": "UF PA com 93,3% de pendência (1.281/1.373).", "antiga": "Pedido 544652 · logger  há 59 dias sem retorno.", "recente": "881 loggers recebidos no somatório dos últimos 7 dias."}, "charts": {"ag": {"y": ["FLN - TGEX TRANSPORTES E LOCACAO DE VEIC", "GYN - RBR EXPERIENCIA EM TRANSPORTES", "AJU - CASSIMIRO TRANSPORTES", "VTCLOG - BSB", "VTCLOG - REC", "VTCLOG CNF - CONTAGEM", "", "VTCLOG RIO GALEAO", "FOR - NT TRANSPORTE LTDA", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "SSA - BELTRANS CARGAS", "VTCLOG - GRU"], "x": [1111, 1122, 1155, 1275, 1509, 1537, 1575, 1724, 1762, 1944, 1989, 15173]}, "pend": {"y": ["POA - GMB TRANSPORTES E LOGISTICA ME", "THE - TRANSPRESS", "BEL - SSS EXPRESSO", "VTCLOG - REC", "SSA - BELTRANS CARGAS", "VTCLOG - BSB", "VTCLOG CNF - CONTAGEM", "FOR - NT TRANSPORTE LTDA", "MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL", "VTCLOG RIO GALEAO", "", "VTCLOG - GRU"], "x": [639, 717, 782, 791, 881, 896, 911, 1007, 1053, 1119, 1575, 12528]}, "trend": {"x": ["2026-03-09 00:00:00", "2026-03-16 00:00:00", "2026-03-23 00:00:00", "2026-03-30 00:00:00", "2026-04-06 00:00:00", "2026-04-13 00:00:00", "2026-04-20 00:00:00", "2026-04-27 00:00:00", "2026-05-04 00:00:00"], "y": [1131, 6001, 6663, 7664, 4543, 6700, 3833, 6135, 7919]}, "uf": {"y": ["GO", "AM", "PE", "SC", "CE", "RS", "RJ", "BA", "MG", "SP"], "x": [1786, 1964, 1965, 2121, 2246, 2716, 3047, 3071, 4362, 6228]}, "rec7": {"x": ["28/04", "29/04", "30/04", "01/05", "02/05", "03/05", "04/05"], "y": [137, 251, 142, 0, 309, 6, 36]}}}};
 
 const LAYOUT_BASE = {
   paper_bgcolor:"#141b26", plot_bgcolor:"#141b26",
@@ -162,10 +165,33 @@ function traceLine(d, color){
             line:{color:color,width:2},marker:{color:color,size:6}}];
 }
 
-const cfg = {displayModeBar:false};
+const cfg = {displayModeBar:false, responsive:true};
+
+function hasSeriesData(series){
+  return !!series && (
+    (Array.isArray(series.x) && series.x.length > 0) ||
+    (Array.isArray(series.y) && series.y.length > 0)
+  );
+}
+
+function renderChart(id, traces, layout){
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!traces || !traces.length || !traces.some(hasSeriesData)) {
+    el.innerHTML = '<div class="chart-empty">Sem dados no período selecionado</div>';
+    return;
+  }
+  try {
+    Plotly.newPlot(el, traces, layout, cfg);
+  } catch (err) {
+    console.error(`Falha ao renderizar ${id}:`, err);
+    el.innerHTML = '<div class="chart-empty">Não foi possível carregar este gráfico</div>';
+  }
+}
 
 function renderAll(days){
-  const d = PERIODS_DATA[String(days)];
+  const d = PERIODS_DATA[String(days)] || PERIODS_DATA[String(PERIODO_PAD)];
+  if (!d) return;
 
   // KPIs
   document.getElementById("kpi-pedidos").textContent    = d.kpi.pedidos;
@@ -182,11 +208,11 @@ function renderAll(days){
   document.getElementById("ins-recente").textContent = d.insights.recente;
 
   // Charts
-  Plotly.react("chart-ag",   traceBarH(d.charts.ag,   "#144b8b"), layoutH(320), cfg);
-  Plotly.react("chart-pend", traceBarH(d.charts.pend, "#1f6cb8"), layoutH(320), cfg);
-  Plotly.react("chart-trend",traceLine(d.charts.trend, "#2f80d0"),layoutV(280), cfg);
-  Plotly.react("chart-uf",   traceBarH(d.charts.uf,   "#144b8b"), layoutH(280), cfg);
-  Plotly.react("chart-rec7", traceBarV(d.charts.rec7, "#1f6cb8"), layoutV(280), cfg);
+  renderChart("chart-ag",    traceBarH(d.charts.ag,   "#144b8b"), layoutH(320));
+  renderChart("chart-pend",  traceBarH(d.charts.pend, "#1f6cb8"), layoutH(320));
+  renderChart("chart-trend", traceLine(d.charts.trend, "#2f80d0"), layoutV(280));
+  renderChart("chart-uf",    traceBarH(d.charts.uf,   "#144b8b"), layoutH(280));
+  renderChart("chart-rec7",  traceBarV(d.charts.rec7, "#1f6cb8"), layoutV(280));
 }
 
 function switchPeriod(days){
@@ -196,7 +222,7 @@ function switchPeriod(days){
 }
 
 // Initial render
-renderAll(30);
+renderAll(PERIODO_PAD);
 </script>
 </body>
 </html>
