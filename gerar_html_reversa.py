@@ -461,6 +461,7 @@ function traceLine(d, color){{
 }}
 
 const cfg = {{displayModeBar:false, responsive:true}};
+const DEFAULT_PERIOD = {PERIODO_PAD};
 
 function hasSeriesData(series){{
   return !!series && (
@@ -495,7 +496,7 @@ function renderChart(id, traces, layout){{
 }}
 
 function renderAll(days){{
-  const d = PERIODS_DATA[String(days)] || PERIODS_DATA[String(PERIODO_PAD)];
+  const d = PERIODS_DATA[String(days)] || PERIODS_DATA[String(DEFAULT_PERIOD)];
   if (!d) return;
 
   // KPIs
@@ -536,7 +537,7 @@ window.addEventListener("resize", () => {{
 }});
 
 // Initial render
-renderAll(PERIODO_PAD);
+renderAll(DEFAULT_PERIOD);
 </script>
 </body>
 </html>"""
