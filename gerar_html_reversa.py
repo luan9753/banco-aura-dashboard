@@ -233,11 +233,12 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
     tbl = df.copy()
     if "Ultimo_Historico" not in tbl.columns:
         tbl["Ultimo_Historico"] = pd.NaT
-    tbl = tbl.sort_values("_data_entrega_dt", ascending=False).head(TABLE_MAX_ROWS)
+    tbl = tbl.sort_values("_data_entrega_dt", ascending=False)
     tbl["Data de Entrega"] = pd.to_datetime(tbl["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
     tbl["Ultimo_Historico"] = pd.to_datetime(tbl["Ultimo_Historico"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
-    table_rows = tbl.reindex(columns=detail_cols).fillna("").values.tolist()
-    table_rows = [[str(c) if c is not None else "" for c in row] for row in table_rows]
+    all_rows = tbl.reindex(columns=detail_cols).fillna("").values.tolist()
+    all_rows = [[str(c) if c is not None else "" for c in row] for row in all_rows]
+    table_rows = all_rows[:TABLE_MAX_ROWS]
 
     return {
         "period_txt": period_txt,
@@ -263,6 +264,7 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
                         "Cidade Destino", "Destinatario"],
             "rows": table_rows,
         },
+        "csv_rows": all_rows,
     }
 
 
@@ -602,7 +604,7 @@ function renderAll(days, tipo){{
   const tbody = document.getElementById("detail-tbody");
   if (tbody) tbody.innerHTML = buildTableRows(d.table.rows);
   const csvLink = document.getElementById("csv-download");
-  if (csvLink) csvLink.href = buildCsvHref(d.table.headers, d.table.rows);
+  if (csvLink) csvLink.href = buildCsvHref(d.table.headers, d.csv_rows);
 }}
 
 function switchPeriod(days){{
