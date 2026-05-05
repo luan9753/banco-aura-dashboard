@@ -36,6 +36,12 @@ def first_non_blank(s: pd.Series) -> str:
     vals = vals[vals != ""]
     return vals.iloc[0] if not vals.empty else ""
 
+def join_unique_non_blank(s: pd.Series) -> str:
+    vals = s.dropna().astype(str).str.strip()
+    vals = [v for v in vals if v != ""]
+    uniq = list(dict.fromkeys(vals))
+    return " | ".join(uniq)
+
 def fmt_int(n) -> str:
     return f"{int(n):,}".replace(",", ".")
 
@@ -74,6 +80,8 @@ def build_model(base_loggers, base_agentes, recebimento, base_destinatarios) -> 
     base_agentes["PEDIDO"]       = normalize_key(base_agentes["PEDIDO"])
     base_destinatarios["PEDIDO"] = normalize_key(base_destinatarios["PEDIDO"])
     recebimento["ds_tag"]        = normalize_key(recebimento["ds_tag"])
+    if "MOTORISTA" not in base_agentes.columns:
+        base_agentes["MOTORISTA"] = ""
 
     if "ds_acaomovimentacao" in recebimento.columns:
         acao = recebimento["ds_acaomovimentacao"].fillna("").astype(str).str.lower()
@@ -93,7 +101,10 @@ def build_model(base_loggers, base_agentes, recebimento, base_destinatarios) -> 
     recebimento["dt_historico"]  = pd.to_datetime(recebimento["dt_historico"], errors="coerce")
 
     agentes_agg = base_agentes.groupby("PEDIDO", as_index=False).agg({
-        "AGENTE": first_non_blank, "UF Destinatario": first_non_blank, "DATA_ENTREGA": "min",
+        "AGENTE": first_non_blank,
+        "MOTORISTA": join_unique_non_blank,
+        "UF Destinatario": first_non_blank,
+        "DATA_ENTREGA": "min",
     })
     dest_agg = base_destinatarios.groupby("PEDIDO", as_index=False).agg({
         "CIDADE_DESTINO": first_non_blank, "UF_DESTINO": first_non_blank, "DESTINATARIO": first_non_blank,
@@ -229,7 +240,7 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
     detail_cols = [
         "Pedido", "Logger", "Tipo Datalogger", "UF", "Data de Entrega",
         "Ultimo_Historico", "Agente", "Status Retorno", "UF Destino",
-        "Cidade Destino", "Destinatario",
+        "Cidade Destino", "Destinatario", "MOTORISTA",
     ]
     tbl = df.copy()
     if "Ultimo_Historico" not in tbl.columns:
@@ -262,7 +273,7 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
         "table": {
             "headers": ["Pedido", "Logger", "Tipo Datalogger", "UF", "Data de Entrega",
                         "Ultimo Historico", "Agente", "Status Retorno", "UF Destino",
-                        "Cidade Destino", "Destinatario"],
+                        "Cidade Destino", "Destinatario", "Motorista"],
             "rows": table_rows,
         },
         "csv_rows": all_rows,
