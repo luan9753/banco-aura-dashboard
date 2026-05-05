@@ -2,6 +2,7 @@
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 import json
+from itertools import combinations
 from html import escape
 from pathlib import Path
 import unicodedata
@@ -354,6 +355,14 @@ body{background:radial-gradient(900px 260px at 0% -10%,#13233f 0%,rgba(19,35,63,
   background:rgba(9,15,28,.34);border:1px solid rgba(173,200,232,.2);color:#dfeaf8;font-size:.78rem;}
 .filter-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px 0;}
 .tipo-label-sm{font-size:.85rem;color:#9fb7d4;font-weight:600;white-space:nowrap;}
+.type-chip-list{display:flex;flex-wrap:wrap;gap:8px;}
+.type-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;
+  background:#13243c;border:1px solid #2b466b;color:#dceafe;cursor:pointer;font-size:.84rem;
+  font-weight:700;user-select:none;transition:background .15s,color .15s,border-color .15s;}
+.type-chip:hover{background:#1a3358;border-color:#3a6090;}
+.type-chip input{accent-color:#2f80d0;cursor:pointer;}
+.type-chip-all{background:linear-gradient(135deg,#173158 0%,#1d4f8f 100%);border-color:#4f94da;}
+.type-chip-all:hover{background:linear-gradient(135deg,#1d3f72 0%,#2560ab 100%);}
 .device-select{background:#13243c;border:1px solid #2b466b;border-radius:8px;color:#dceafe;
   cursor:pointer;font-size:.88rem;font-weight:600;padding:6px 12px;min-width:240px;outline:none;}
 .device-select:hover{background:#1a3358;border-color:#3a6090;}
@@ -741,19 +750,27 @@ def generate_html_tipo(
             },
         }
 
+    device_types = sorted(DEVICE_TYPES)
     states = {"ALL": _state("Todos os tipos", df_estoque_geral, df_mov_cf, df_rec_est, df_packing, df_mov_recente_5d)}
-    for tipo in sorted(DEVICE_TYPES):
-        states[tipo] = _state(
-            tipo,
-            _subset_types(df_estoque_geral, {tipo}),
-            _subset_types(df_mov_cf, {tipo}),
-            _subset_types(df_rec_est, {tipo}),
-            _subset_types(df_packing, {tipo}),
-            _subset_types(df_mov_recente_5d, {tipo}),
-        )
+    for r in range(1, len(device_types)):
+        for combo in combinations(device_types, r):
+            selected = set(combo)
+            key = "|".join(combo)
+            states[key] = _state(
+                " + ".join(combo),
+                _subset_types(df_estoque_geral, selected),
+                _subset_types(df_mov_cf, selected),
+                _subset_types(df_rec_est, selected),
+                _subset_types(df_packing, selected),
+                _subset_types(df_mov_recente_5d, selected),
+            )
 
     states_json = json.dumps(states, ensure_ascii=False)
-    tipo_options_html = "".join(f'<option value="{escape(tipo)}">{escape(tipo)}</option>' for tipo in sorted(DEVICE_TYPES))
+    tipo_checks_html = "".join(
+        f'<label class="type-chip"><input class="tipo-checkbox" type="checkbox" data-tipo="{escape(tipo)}" checked onchange="refreshTipo()"> <span>{escape(tipo)}</span></label>'
+        for tipo in device_types
+    )
+    tipo_all_checked = "checked"
     all_state = states["ALL"]
     gerado = datetime.now().strftime("%d/%m/%Y %H:%M")
     today_str = pd.Timestamp.now().strftime("%d/%m/%Y")
@@ -779,10 +796,10 @@ def generate_html_tipo(
 
 <div class="filter-row">
   <span class="tipo-label-sm">Filtro por tipo de equipamento</span>
-  <select id="tipo-select" class="device-select" onchange="switchTipo(this.value)">
-    <option value="ALL">Todos os tipos</option>
-    {tipo_options_html}
-  </select>
+  <div class="type-chip-list">
+    <label class="type-chip type-chip-all"><input id="tipo-all" type="checkbox" {tipo_all_checked} onchange="toggleAllTipos(this.checked)"> <span>Todos os tipos</span></label>
+    {tipo_checks_html}
+  </div>
 </div>
 
 <div class="meta-strip">
@@ -877,8 +894,36 @@ function renderBar(id, labels, values, color, height) {{
 function renderStatus(id, labels, values) {{
   Plotly.react(id, [{{x: values || [], y: labels || [], orientation: "h", type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {{color: "#274a9f"}} }}], {{...BASE_LAYOUT, height: 430}}, PLOTLY_CFG);
 }}
-function switchTipo(tipo) {{
-  const data = STATES[tipo] || STATES.ALL;
+function getSelectedTipos() {{
+  return Array.from(document.querySelectorAll(".tipo-checkbox"))
+    .filter(cb => cb.checked)
+    .map(cb => cb.dataset.tipo);
+}}
+function syncTipoAll() {{
+  const total = document.querySelectorAll(".tipo-checkbox").length;
+  const selected = getSelectedTipos().length;
+  const all = document.getElementById("tipo-all");
+  if (all) all.checked = total > 0 && selected === total;
+}}
+function toggleAllTipos(checked) {{
+  document.querySelectorAll(".tipo-checkbox").forEach(cb => {{
+    cb.checked = checked;
+  }});
+  refreshTipo();
+}}
+function refreshTipo() {{
+  let selected = getSelectedTipos();
+  if (selected.length === 0) {{
+    document.querySelectorAll(".tipo-checkbox").forEach(cb => {{
+      cb.checked = true;
+    }});
+    selected = getSelectedTipos();
+  }}
+  syncTipoAll();
+  const key = selected.length === document.querySelectorAll(".tipo-checkbox").length
+    ? "ALL"
+    : selected.join("|");
+  const data = STATES[key] || STATES.ALL;
   setText("meta-tipo", data.label || "Todos os tipos");
   setText("meta-coverage", String(data.map_coverage).replace(".", ",") + "%");
   setText("meta-update", data.ultima_atualizacao || "Sem dados");
@@ -899,10 +944,8 @@ function switchTipo(tipo) {{
   renderBar("chart-cf", data.cf_dia.labels, data.cf_dia.values, "#5c8ce2", 290);
   renderStatus("chart-status", data.status.labels, data.status.values);
   renderBar("chart-pack", data.packing_dia.labels, data.packing_dia.values, "#77a2ee", 290);
-  const sel = document.getElementById("tipo-select");
-  if (sel && sel.value !== tipo) sel.value = tipo;
 }}
-document.addEventListener("DOMContentLoaded", () => switchTipo("ALL"));
+document.addEventListener("DOMContentLoaded", () => refreshTipo());
 </script>
 
 <footer>Atualizado automaticamente a cada 10 min &nbsp;·&nbsp; VTC LOG — BI Qualidade</footer>
