@@ -372,7 +372,7 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
     tipo_btns_html = (
         '<button class="tipo-btn active" id="tipo-btn-" onclick="switchTipo(\'\')">Todos os tipos</button>'
         + "".join(
-            f'<button class="tipo-btn" id="tipo-btn-{t}" onclick="switchTipo({json.dumps(t)})">{t}</button>'
+            f"<button class=\"tipo-btn\" id=\"tipo-btn-{t}\" onclick=\"switchTipo('{t}')\">{t}</button>"
             for t in tipos
         )
     )
