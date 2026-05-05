@@ -1,6 +1,7 @@
 """Gera REVERSA_DATALOGGERS.html replicando fielmente o dasboard_reversa_loggers.py"""
 from __future__ import annotations
 from pathlib import Path
+from html import escape
 import unicodedata
 import json
 from datetime import datetime
@@ -313,6 +314,12 @@ body{background:
 .tipo-btn:hover{background:#1a3358;color:#dceafe;border-color:#3a6090;}
 .tipo-btn.active{background:linear-gradient(135deg,#1d4f8f 0%,#2f80d0 100%);
   border-color:#4f94da;color:#fff;}
+.uf-row{display:flex;align-items:center;gap:10px;margin:10px 0 0;flex-wrap:wrap;}
+.uf-select{background:#13243c;border:1px solid #2b466b;border-radius:8px;
+  color:#dceafe;cursor:pointer;font-size:.88rem;font-weight:600;padding:6px 12px;
+  min-width:220px;outline:none;}
+.uf-select:hover{background:#1a3358;border-color:#3a6090;}
+.uf-select:focus{border-color:#4f94da;box-shadow:0 0 0 2px rgba(47,128,208,.18);}
 .tabs-bar{display:flex;gap:6px;margin:6px 0 0;border-bottom:1px solid #24344d;padding-bottom:0;}
 .tab-btn{background:#131d30;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;
   padding:9px 18px;color:#ced9ea;cursor:pointer;font-size:.95rem;font-weight:600;
@@ -359,7 +366,7 @@ footer{margin-top:24px;font-size:.75rem;color:#556070;text-align:right;}
 # ── HTML template ─────────────────────────────────────────────────────────────
 
 def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
-                  gerado: str, hist_last: str) -> str:
+                  ufs: list[str], gerado: str, hist_last: str) -> str:
     pad = periods_data[PERIODO_PAD][""]
     periods_json = json.dumps(
         {str(k): {t: v for t, v in tv.items()} for k, tv in periods_data.items()},
@@ -377,6 +384,10 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
             f"<button class=\"tipo-btn\" id=\"tipo-btn-{t}\" onclick=\"switchTipo('{t}')\">{t}</button>"
             for t in tipos
         )
+    )
+    uf_options_html = "".join(
+        f'<option value="{escape(uf)}">{escape(uf)}</option>'
+        for uf in ufs
     )
     tbl_headers = "".join(f"<th>{h}</th>" for h in pad["table"]["headers"])
 
@@ -408,8 +419,17 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
   {tipo_btns_html}
 </div>
 
+<div class="uf-row">
+  <span class="tipo-label-sm">Filtro por UF</span>
+  <select id="uf-select" class="uf-select" onchange="switchUf(this.value)">
+    <option value="">Todas as UFs</option>
+    {uf_options_html}
+  </select>
+</div>
+
 <div class="meta-strip">
   <strong>Periodo aplicado:</strong> <span id="meta-period">{pad["period_txt"]}</span><br>
+  <strong>UF aplicada:</strong> <span id="meta-uf">Todas as UFs</span> &nbsp;|&nbsp;
   <strong>Ultima atualizacao do historico:</strong> {hist_last} &nbsp;|&nbsp; <strong>Ultima atualizacao da tela:</strong> {gerado}
 </div>
 
@@ -506,13 +526,17 @@ function layoutBarH(data, height){{
 function layoutBarV(height){{
   return Object.assign({{}}, LAYOUT_BASE, {{
     height:height,
-    margin:{{l:10,r:10,t:20,b:10}},
+    margin:{{l:50,r:20,t:50,b:60}},
+    xaxis:Object.assign({{}},LAYOUT_BASE.xaxis,{{tickangle:-30,automargin:true}}),
+    yaxis:Object.assign({{}},LAYOUT_BASE.yaxis,{{visible:false}}),
   }});
 }}
 function layoutLine(height){{
   return Object.assign({{}}, LAYOUT_BASE, {{
     height:height,
-    margin:{{l:10,r:10,t:20,b:10}},
+    margin:{{l:50,r:30,t:50,b:70}},
+    xaxis:Object.assign({{}},LAYOUT_BASE.xaxis,{{tickangle:-30,automargin:true}}),
+    yaxis:Object.assign({{}},LAYOUT_BASE.yaxis,{{visible:false}}),
   }});
 }}
 
@@ -565,7 +589,9 @@ function buildTableRows(rows){{
     const statusIdx = 7;
     const statusClass = (r[statusIdx] || "").includes("Retornado") ? "status-retornado" : "status-pendente";
     const cells = r.map((c,i) =>
-      i === statusIdx ? `<td class="${{statusClass}}">${{c}}</td>` : `<td title="${{c}}">${{c}}</td>`
+      i === statusIdx
+        ? `<td class="${{statusClass}}">${{escapeHtml(c)}}</td>`
+        : `<td title="${{escapeHtml(c)}}">${{escapeHtml(c)}}</td>`
     ).join("");
     return `<tr>${{cells}}</tr>`;
   }}).join("");
@@ -580,31 +606,191 @@ function buildCsvHref(headers, rows){{
 
 let _currentDays = DEFAULT_PERIOD;
 let _currentTipo = "";
+let _currentUf = "";
+
+function escapeHtml(value){{
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}}
+
+function normalizeUf(value){{
+  return String(value ?? "").trim().toUpperCase();
+}}
+
+function parseBrDate(value){{
+  const s = String(value ?? "").trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{{2}})\/(\d{{2}})\/(\d{{4}})(?:\s+(\d{{2}}):(\d{{2}}):(\d{{2}}))?$/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0));
+}}
+
+function formatBrDate(date){{
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${{dd}}/${{mm}}/${{yyyy}}`;
+}}
+
+function startOfWeek(date){{
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  return d;
+}}
+
+function topEntries(map, limit){{
+  return Array.from(map.entries())
+    .sort((a, b) => a[1] - b[1])
+    .slice(-limit);
+}}
+
+function computePeriodData(rows, days){{
+  const pedidos = new Set();
+  let loggers = 0;
+  let retornados = 0;
+  let pendentes = 0;
+
+  const agCounts = new Map();
+  const pendCounts = new Map();
+  const ufCounts = new Map();
+  const trendCounts = new Map();
+  const rec7ByDay = new Map();
+
+  const dates = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start7 = new Date(today);
+  start7.setDate(start7.getDate() - 6);
+  const end7 = new Date(today);
+  end7.setHours(23, 59, 59, 999);
+
+  for (const row of rows) {{
+    const pedido = String(row[0] ?? "").trim();
+    const logger = String(row[1] ?? "").trim();
+    const agente = String(row[6] ?? "").trim();
+    const status = String(row[7] ?? "").trim();
+    const ufDestino = String(row[8] ?? "").trim();
+    const dtEntrega = parseBrDate(row[4]);
+    const dtHistorico = parseBrDate(row[5]);
+
+    if (pedido) pedidos.add(pedido);
+    if (logger) loggers += 1;
+    if (status.includes("Retornado")) retornados += 1;
+    else pendentes += 1;
+
+    if (agente) agCounts.set(agente, (agCounts.get(agente) || 0) + 1);
+    if (status.includes("Pendente de Retorno") && agente) {{
+      pendCounts.set(agente, (pendCounts.get(agente) || 0) + 1);
+    }}
+    if (ufDestino) ufCounts.set(ufDestino, (ufCounts.get(ufDestino) || 0) + 1);
+
+    if (dtEntrega) {{
+      dates.push(dtEntrega);
+      const wk = startOfWeek(dtEntrega);
+      const key = `${{wk.getFullYear()}}-${{String(wk.getMonth() + 1).padStart(2, "0")}}-${{String(wk.getDate()).padStart(2, "0")}}`;
+      trendCounts.set(key, (trendCounts.get(key) || 0) + 1);
+    }}
+
+    if (dtHistorico && dtHistorico >= start7 && dtHistorico <= end7 && logger) {{
+      const dayKey = `${{dtHistorico.getFullYear()}}-${{String(dtHistorico.getMonth() + 1).padStart(2, "0")}}-${{String(dtHistorico.getDate()).padStart(2, "0")}}`;
+      if (!rec7ByDay.has(dayKey)) rec7ByDay.set(dayKey, new Set());
+      rec7ByDay.get(dayKey).add(logger);
+    }}
+  }}
+
+  const minDate = dates.length ? new Date(Math.min(...dates.map(d => d.getTime()))) : null;
+  const maxDate = dates.length ? new Date(Math.max(...dates.map(d => d.getTime()))) : null;
+  const periodTxt = minDate && maxDate
+    ? `${{formatBrDate(minDate)}} ate ${{formatBrDate(maxDate)}}`
+    : `Ultimos ${{days}} dias`;
+
+  const trendEntries = Array.from(trendCounts.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]));
+  const trendX = trendEntries.map(([k]) => {{
+    const [y, m, d] = k.split("-").map(Number);
+    return `${{String(d).padStart(2, "0")}}/${{String(m).padStart(2, "0")}}/${{y}}`;
+  }});
+  const trendY = trendEntries.map(([, v]) => v);
+
+  const rec7X = [];
+  const rec7Y = [];
+  for (let i = 6; i >= 0; i--) {{
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `${{d.getFullYear()}}-${{String(d.getMonth() + 1).padStart(2, "0")}}-${{String(d.getDate()).padStart(2, "0")}}`;
+    rec7X.push(`${{String(d.getDate()).padStart(2, "0")}}/${{String(d.getMonth() + 1).padStart(2, "0")}}`);
+    rec7Y.push((rec7ByDay.get(key) || new Set()).size);
+  }}
+
+  const toChartData = (map, limit) => {{
+    const entries = topEntries(map, limit);
+    return {{
+      y: entries.map(([label]) => label),
+      x: entries.map(([, value]) => value),
+    }};
+  }};
+
+  return {{
+    period_txt: periodTxt,
+    kpi: {{
+      pedidos: pedidos.size.toLocaleString("pt-BR"),
+      loggers: loggers.toLocaleString("pt-BR"),
+      retornados: retornados.toLocaleString("pt-BR"),
+      pendentes: pendentes.toLocaleString("pt-BR"),
+      taxa_ret: loggers > 0 ? `${{((retornados / loggers) * 100).toFixed(1).replace(".", ",")}}%` : "0,0%",
+      taxa_pend: loggers > 0 ? `${{((pendentes / loggers) * 100).toFixed(1).replace(".", ",")}}%` : "0,0%",
+    }},
+    charts: {{
+      ag: toChartData(agCounts, 12),
+      pend: toChartData(pendCounts, 12),
+      trend: {{ x: trendX, y: trendY }},
+      uf: toChartData(ufCounts, 10),
+      risk: toChartData(pendCounts, 10),
+      rec7: {{ x: rec7X, y: rec7Y }},
+    }},
+    table: {{
+      headers: ["Pedido", "Logger", "Tipo Datalogger", "UF", "Data de Entrega", "Ultimo Historico", "Agente", "Status Retorno", "UF Destino", "Cidade Destino", "Destinatario"],
+      rows: rows.slice(0, 500),
+    }},
+    csv_rows: rows,
+  }};
+}}
 
 function renderAll(days, tipo){{
   const byTipo = PERIODS_DATA[String(days)] || PERIODS_DATA[String(DEFAULT_PERIOD)];
   const d = byTipo[tipo !== undefined ? tipo : ""] || byTipo[""];
   if (!d) return;
 
-  document.getElementById("meta-period").textContent     = d.period_txt;
-  document.getElementById("kpi-pedidos").textContent     = d.kpi.pedidos;
-  document.getElementById("kpi-loggers").textContent     = d.kpi.loggers;
-  document.getElementById("kpi-retornados").textContent  = d.kpi.retornados;
-  document.getElementById("kpi-pendentes").textContent   = d.kpi.pendentes;
-  document.getElementById("kpi-taxa-ret").textContent    = d.kpi.taxa_ret;
-  document.getElementById("kpi-taxa-pend").textContent   = d.kpi.taxa_pend;
+  const rows = (d.csv_rows || []).filter(r => !_currentUf || normalizeUf(r[3]) === _currentUf);
+  const computed = computePeriodData(rows, days);
 
-  renderChart("chart-ag",    traceBarH(d.charts.ag,   "#144b8b"), layoutBarH(d.charts.ag,   420));
-  renderChart("chart-pend",  traceBarH(d.charts.pend, "#1f6cb8"), layoutBarH(d.charts.pend, 420));
-  renderChart("chart-trend", traceLine(d.charts.trend),           layoutLine(360));
-  renderChart("chart-uf",    traceBarH(d.charts.uf,   "#2f80d0"), layoutBarH(d.charts.uf,   360));
-  renderChart("chart-risk",  traceBarH(d.charts.risk, "#0f3f73"), layoutBarH(d.charts.risk, 360));
-  renderChart("chart-rec7",  traceBarV(d.charts.rec7, "#2f80d0"), layoutBarV(320));
+  document.getElementById("meta-period").textContent     = computed.period_txt;
+  document.getElementById("meta-uf").textContent         = _currentUf || "Todas as UFs";
+  document.getElementById("kpi-pedidos").textContent     = computed.kpi.pedidos;
+  document.getElementById("kpi-loggers").textContent     = computed.kpi.loggers;
+  document.getElementById("kpi-retornados").textContent  = computed.kpi.retornados;
+  document.getElementById("kpi-pendentes").textContent   = computed.kpi.pendentes;
+  document.getElementById("kpi-taxa-ret").textContent    = computed.kpi.taxa_ret;
+  document.getElementById("kpi-taxa-pend").textContent   = computed.kpi.taxa_pend;
+
+  renderChart("chart-ag",    traceBarH(computed.charts.ag,   "#144b8b"), layoutBarH(computed.charts.ag,   420));
+  renderChart("chart-pend",  traceBarH(computed.charts.pend, "#1f6cb8"), layoutBarH(computed.charts.pend, 420));
+  renderChart("chart-trend", traceLine(computed.charts.trend),           layoutLine(360));
+  renderChart("chart-uf",    traceBarH(computed.charts.uf,   "#2f80d0"), layoutBarH(computed.charts.uf,   360));
+  renderChart("chart-risk",  traceBarH(computed.charts.risk, "#0f3f73"), layoutBarH(computed.charts.risk, 360));
+  renderChart("chart-rec7",  traceBarV(computed.charts.rec7, "#2f80d0"), layoutBarV(320));
 
   const tbody = document.getElementById("detail-tbody");
-  if (tbody) tbody.innerHTML = buildTableRows(d.table.rows);
+  if (tbody) tbody.innerHTML = computed.table.rows.length ? buildTableRows(computed.table.rows) : '<tr><td colspan="11" style="padding:16px;text-align:center;color:#9fb0c8;">Sem dados no filtro selecionado</td></tr>';
   const csvLink = document.getElementById("csv-download");
-  if (csvLink) csvLink.href = buildCsvHref(d.table.headers, d.csv_rows);
+  if (csvLink) csvLink.href = buildCsvHref(computed.table.headers, rows);
 }}
 
 function switchPeriod(days){{
@@ -621,6 +807,11 @@ function switchTipo(tipo){{
   const btn = document.getElementById("tipo-btn-"+tipo);
   if (btn) btn.classList.add("active");
   renderAll(_currentDays, tipo);
+}}
+
+function switchUf(uf){{
+  _currentUf = uf;
+  renderAll(_currentDays, _currentTipo);
 }}
 
 function switchTab(tab){{
@@ -679,7 +870,15 @@ def main():
     hist_last = hist_ts.strftime("%d/%m/%Y %H:%M:%S") if pd.notna(hist_ts) else "Sem historico"
 
     tipos = sorted(t for t in model_full["Tipo Datalogger"].dropna().unique() if str(t).strip())
+    ufs = sorted(
+        {
+            normalize_text_value(v)
+            for v in model_full.get("UF", pd.Series(dtype="object")).dropna().unique()
+            if normalize_text_value(v)
+        }
+    )
     print(f"[reversa] Tipos disponiveis: {tipos}")
+    print(f"[reversa] UFs disponiveis: {ufs}")
 
     periods_data: dict[int, dict[str, dict]] = {}
     for days in PERIODOS:
@@ -698,7 +897,7 @@ def main():
         print(f"[reversa] Periodo {days}d: {n_all} registros | "
               + " | ".join(f"{t}:{len(df_p[df_p['Tipo Datalogger']==t])}" for t in tipos))
 
-    html = generate_html(periods_data, tipos, gerado, hist_last)
+    html = generate_html(periods_data, tipos, ufs, gerado, hist_last)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
     print(f"[reversa] HTML salvo: {OUTPUT_FILE}")
 
