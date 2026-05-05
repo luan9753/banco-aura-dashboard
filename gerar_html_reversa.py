@@ -303,6 +303,14 @@ body{background:
   box-shadow:0 8px 18px rgba(0,0,0,.28);}
 .kpi-title{font-size:1.08rem;font-weight:700;color:#9fb7d4;margin-bottom:12px;}
 .kpi-value{font-size:2.65rem;font-weight:800;color:#f6fbff;letter-spacing:-.03em;line-height:1;}
+.tipo-row{display:flex;align-items:center;gap:10px;margin:8px 0 0;flex-wrap:wrap;}
+.tipo-label-sm{font-size:.85rem;color:#9fb7d4;font-weight:600;white-space:nowrap;}
+.tipo-btn{background:#13243c;border:1px solid #2b466b;border-radius:8px;
+  color:#9fb7d4;cursor:pointer;font-size:.82rem;font-weight:600;padding:5px 14px;
+  transition:background .15s,color .15s,border-color .15s;}
+.tipo-btn:hover{background:#1a3358;color:#dceafe;border-color:#3a6090;}
+.tipo-btn.active{background:linear-gradient(135deg,#1d4f8f 0%,#2f80d0 100%);
+  border-color:#4f94da;color:#fff;}
 .tabs-bar{display:flex;gap:6px;margin:6px 0 0;border-bottom:1px solid #24344d;padding-bottom:0;}
 .tab-btn{background:#131d30;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;
   padding:9px 18px;color:#ced9ea;cursor:pointer;font-size:.95rem;font-weight:600;
@@ -348,15 +356,25 @@ footer{margin-top:24px;font-size:.75rem;color:#556070;text-align:right;}
 
 # ── HTML template ─────────────────────────────────────────────────────────────
 
-def generate_html(periods_data: dict[int, dict], gerado: str, hist_last: str) -> str:
-    pad = periods_data[PERIODO_PAD]
-    periods_json = json.dumps({str(k): v for k, v in periods_data.items()},
-                               ensure_ascii=False, default=str)
+def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
+                  gerado: str, hist_last: str) -> str:
+    pad = periods_data[PERIODO_PAD][""]
+    periods_json = json.dumps(
+        {str(k): {t: v for t, v in tv.items()} for k, tv in periods_data.items()},
+        ensure_ascii=False, default=str,
+    )
     btn_labels = {7: "Ultimos 7 dias", 30: "Ultimos 30 dias", 60: "Ultimos 60 dias"}
     btns_html = "".join(
         f'<button class="period-btn{"  active" if d == PERIODO_PAD else ""}" '
         f'id="btn-{d}" onclick="switchPeriod({d})">{btn_labels[d]}</button>'
         for d in PERIODOS
+    )
+    tipo_btns_html = (
+        '<button class="tipo-btn active" id="tipo-btn-" onclick="switchTipo(\'\')">Todos os tipos</button>'
+        + "".join(
+            f'<button class="tipo-btn" id="tipo-btn-{t}" onclick="switchTipo({json.dumps(t)})">{t}</button>'
+            for t in tipos
+        )
     )
     tbl_headers = "".join(f"<th>{h}</th>" for h in pad["table"]["headers"])
 
@@ -381,6 +399,11 @@ def generate_html(periods_data: dict[int, dict], gerado: str, hist_last: str) ->
     <span class="period-label-sm">Filtro rapido</span>
     {btns_html}
   </div>
+</div>
+
+<div class="tipo-row">
+  <span class="tipo-label-sm">Filtro rapido por tipo</span>
+  {tipo_btns_html}
 </div>
 
 <div class="meta-strip">
@@ -467,12 +490,15 @@ const LAYOUT_BASE = {{
   showlegend:false,
 }};
 
-function layoutBarH(height){{
+function layoutBarH(data, height){{
+  // Margem esquerda dinamica para nao cortar os nomes dos agentes
+  const maxLen = data && data.y ? Math.max(1, ...data.y.map(s => String(s||"").length)) : 20;
+  const lMargin = Math.min(Math.max(80, Math.round(maxLen * 7.5)), 300);
   return Object.assign({{}}, LAYOUT_BASE, {{
     height:height,
-    margin:{{l:10,r:12,t:20,b:10}},
+    margin:{{l:lMargin,r:55,t:20,b:10}},
     xaxis:Object.assign({{}},LAYOUT_BASE.xaxis,{{visible:false}}),
-    yaxis:Object.assign({{}},LAYOUT_BASE.yaxis,{{autorange:"reversed"}}),
+    yaxis:Object.assign({{}},LAYOUT_BASE.yaxis,{{autorange:"reversed",tickfont:{{color:"#d3dceb",size:13}}}}),
   }});
 }}
 function layoutBarV(height){{
@@ -550,8 +576,12 @@ function buildCsvHref(headers, rows){{
   return URL.createObjectURL(blob);
 }}
 
-function renderAll(days){{
-  const d = PERIODS_DATA[String(days)] || PERIODS_DATA[String(DEFAULT_PERIOD)];
+let _currentDays = DEFAULT_PERIOD;
+let _currentTipo = "";
+
+function renderAll(days, tipo){{
+  const byTipo = PERIODS_DATA[String(days)] || PERIODS_DATA[String(DEFAULT_PERIOD)];
+  const d = byTipo[tipo !== undefined ? tipo : ""] || byTipo[""];
   if (!d) return;
 
   document.getElementById("meta-period").textContent     = d.period_txt;
@@ -562,11 +592,11 @@ function renderAll(days){{
   document.getElementById("kpi-taxa-ret").textContent    = d.kpi.taxa_ret;
   document.getElementById("kpi-taxa-pend").textContent   = d.kpi.taxa_pend;
 
-  renderChart("chart-ag",    traceBarH(d.charts.ag,   "#144b8b"), layoutBarH(420));
-  renderChart("chart-pend",  traceBarH(d.charts.pend, "#1f6cb8"), layoutBarH(420));
+  renderChart("chart-ag",    traceBarH(d.charts.ag,   "#144b8b"), layoutBarH(d.charts.ag,   420));
+  renderChart("chart-pend",  traceBarH(d.charts.pend, "#1f6cb8"), layoutBarH(d.charts.pend, 420));
   renderChart("chart-trend", traceLine(d.charts.trend),           layoutLine(360));
-  renderChart("chart-uf",    traceBarH(d.charts.uf,   "#2f80d0"), layoutBarH(360));
-  renderChart("chart-risk",  traceBarH(d.charts.risk, "#0f3f73"), layoutBarH(360));
+  renderChart("chart-uf",    traceBarH(d.charts.uf,   "#2f80d0"), layoutBarH(d.charts.uf,   360));
+  renderChart("chart-risk",  traceBarH(d.charts.risk, "#0f3f73"), layoutBarH(d.charts.risk, 360));
   renderChart("chart-rec7",  traceBarV(d.charts.rec7, "#2f80d0"), layoutBarV(320));
 
   const tbody = document.getElementById("detail-tbody");
@@ -576,10 +606,19 @@ function renderAll(days){{
 }}
 
 function switchPeriod(days){{
+  _currentDays = days;
   document.querySelectorAll(".period-btn").forEach(b => b.classList.remove("active"));
   const btn = document.getElementById("btn-"+days);
   if (btn) btn.classList.add("active");
-  renderAll(days);
+  renderAll(days, _currentTipo);
+}}
+
+function switchTipo(tipo){{
+  _currentTipo = tipo;
+  document.querySelectorAll(".tipo-btn").forEach(b => b.classList.remove("active"));
+  const btn = document.getElementById("tipo-btn-"+tipo);
+  if (btn) btn.classList.add("active");
+  renderAll(_currentDays, tipo);
 }}
 
 function switchTab(tab){{
@@ -605,7 +644,7 @@ window.addEventListener("resize", () => {{
   }});
 }});
 
-renderAll(DEFAULT_PERIOD);
+renderAll(DEFAULT_PERIOD, "");
 </script>
 </body>
 </html>"""
@@ -637,17 +676,27 @@ def main():
     hist_ts = pd.to_datetime(model_full.get("Ultimo_Historico"), errors="coerce").max()
     hist_last = hist_ts.strftime("%d/%m/%Y %H:%M:%S") if pd.notna(hist_ts) else "Sem historico"
 
-    periods_data: dict[int, dict] = {}
+    tipos = sorted(t for t in model_full["Tipo Datalogger"].dropna().unique() if str(t).strip())
+    print(f"[reversa] Tipos disponiveis: {tipos}")
+
+    periods_data: dict[int, dict[str, dict]] = {}
     for days in PERIODOS:
         cutoff = pd.Timestamp.now() - pd.Timedelta(days=days)
         df_p = model_full[model_full["_data_entrega_dt"] >= cutoff].copy()
         df_p["Data de Entrega"] = pd.to_datetime(df_p.get("Data de Entrega"), errors="coerce")
         df_p = df_p[df_p["Data de Entrega"].notna()].copy()
-        periods_data[days] = _compute_period_data(df_p, days)
-        print(f"[reversa] Periodo {days}d: {len(df_p)} registros, "
-              f"tabela: {len(periods_data[days]['table']['rows'])} linhas")
 
-    html = generate_html(periods_data, gerado, hist_last)
+        periods_data[days] = {}
+        periods_data[days][""] = _compute_period_data(df_p, days)
+        for tipo in tipos:
+            df_t = df_p[df_p["Tipo Datalogger"] == tipo].copy()
+            periods_data[days][tipo] = _compute_period_data(df_t, days)
+
+        n_all = len(df_p)
+        print(f"[reversa] Periodo {days}d: {n_all} registros | "
+              + " | ".join(f"{t}:{len(df_p[df_p['Tipo Datalogger']==t])}" for t in tipos))
+
+    html = generate_html(periods_data, tipos, gerado, hist_last)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
     print(f"[reversa] HTML salvo: {OUTPUT_FILE}")
 
