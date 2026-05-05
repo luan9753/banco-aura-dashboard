@@ -765,7 +765,68 @@ def generate_html_tipo(
                 _subset_types(df_mov_recente_5d, selected),
             )
 
+    detail_df = df_estoque_geral.copy()
+    if not detail_df.empty:
+        if "ds_tipodatalogger" in detail_df.columns:
+            detail_df["tipo"] = detail_df["ds_tipodatalogger"].fillna("").astype(str).str.strip()
+        else:
+            detail_df["tipo"] = ""
+        if "situacao_oficial" in detail_df.columns:
+            detail_df["status"] = detail_df["situacao_oficial"].fillna("").astype(str).str.strip()
+        elif "ds_statusrecebimento" in detail_df.columns:
+            detail_df["status"] = detail_df["ds_statusrecebimento"].fillna("").astype(str).str.strip()
+        else:
+            detail_df["status"] = ""
+        if "ds_responsavel" in detail_df.columns:
+            resp = detail_df["ds_responsavel"].fillna("").astype(str).str.strip()
+        else:
+            resp = pd.Series("", index=detail_df.index, dtype="object")
+        if "id_usuarioatualizacao" in detail_df.columns:
+            user = detail_df["id_usuarioatualizacao"].fillna("").astype(str).str.strip()
+        else:
+            user = pd.Series("", index=detail_df.index, dtype="object")
+        detail_df["responsavel"] = resp.mask(resp.eq(""), user)
+        detail_df["ultima_atualizacao"] = pd.to_datetime(detail_df.get("dt_atualizacao"), errors="coerce")
+        detail_df["ultima_atualizacao_str"] = detail_df["ultima_atualizacao"].dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
+        detail_df["ultima_atualizacao_ts"] = detail_df["ultima_atualizacao"].apply(
+            lambda dt: int(dt.timestamp() * 1000) if pd.notna(dt) else 0
+        )
+        if "ds_tag" in detail_df.columns:
+            detail_df["Tag"] = detail_df["ds_tag"].fillna("").astype(str).str.strip()
+        else:
+            detail_df["Tag"] = ""
+        if "ds_destino" in detail_df.columns:
+            detail_df["Destino"] = detail_df["ds_destino"].fillna("").astype(str).str.strip()
+        else:
+            detail_df["Destino"] = ""
+        if "ds_finalidade" in detail_df.columns:
+            detail_df["Finalidade"] = detail_df["ds_finalidade"].fillna("").astype(str).str.strip()
+        else:
+            detail_df["Finalidade"] = ""
+        detail_df = detail_df[[
+            "Tag",
+            "Destino",
+            "Finalidade",
+            "ultima_atualizacao_str",
+            "ultima_atualizacao_ts",
+            "status",
+            "responsavel",
+            "tipo",
+        ]].copy()
+
     states_json = json.dumps(states, ensure_ascii=False)
+    detail_rows_json = json.dumps(detail_df.to_dict(orient="records"), ensure_ascii=False)
+    status_options = ["Todos"]
+    if not detail_df.empty and "status" in detail_df.columns:
+        status_options.extend(
+            sorted(
+                detail_df["status"].dropna().astype(str).str.strip().loc[lambda s: s.ne("")].unique().tolist()
+            )
+        )
+    status_options_html = "".join(
+        f'<option value="{escape(status)}">{escape(status)}</option>'
+        for status in status_options
+    )
     tipo_checks_html = "".join(
         f'<label class="type-chip"><input class="tipo-checkbox" type="checkbox" data-tipo="{escape(tipo)}" checked onchange="refreshTipo()"> <span>{escape(tipo)}</span></label>'
         for tipo in device_types
@@ -867,8 +928,38 @@ def generate_html_tipo(
   <div class="chart-box"><div class="chart-title">Volumes Embalados</div><div id="chart-pack" style="height:290px"></div></div>
 </div>
 
+<div class="detail-wrap">
+  <div class="detail-head">
+    <h3 class="section-title" style="margin:0;">Detalhe por Status</h3>
+    <div class="detail-subtitle">Drill-through por status, igual ao painel Streamlit</div>
+  </div>
+  <div class="detail-controls">
+    <span class="tipo-label-sm">Drill-through por Status</span>
+    <select id="status-select" class="detail-select" onchange="renderDetailTable()">
+      {status_options_html}
+    </select>
+    <span class="detail-count">Registros encontrados: <strong id="detail-count">0</strong></span>
+  </div>
+  <div class="detail-scroll">
+    <table class="detail-tbl">
+      <thead>
+        <tr>
+          <th>Tag</th>
+          <th>Destino</th>
+          <th>Finalidade</th>
+          <th>Ultima Atualizacao</th>
+          <th>Status</th>
+          <th>Responsavel</th>
+        </tr>
+      </thead>
+      <tbody id="detail-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 const STATES = {states_json};
+const DETAIL_ROWS = {detail_rows_json};
 const PLOTLY_CFG = {{displayModeBar:false, responsive:true}};
 const BASE_LAYOUT = {{
   paper_bgcolor: "#141b26",
@@ -926,10 +1017,22 @@ function renderStatus(id, labels, values) {{
     }}
   }}, PLOTLY_CFG);
 }}
+function escapeHtml(value) {{
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}}
 function getSelectedTipos() {{
   return Array.from(document.querySelectorAll(".tipo-checkbox"))
     .filter(cb => cb.checked)
     .map(cb => cb.dataset.tipo);
+}}
+function getSelectedStatus() {{
+  const el = document.getElementById("status-select");
+  return el ? el.value : "Todos";
 }}
 function syncTipoAll() {{
   const total = document.querySelectorAll(".tipo-checkbox").length;
@@ -942,6 +1045,33 @@ function toggleAllTipos(checked) {{
     cb.checked = checked;
   }});
   refreshTipo();
+}}
+function renderDetailTable() {{
+  const selectedTipos = new Set(getSelectedTipos());
+  const selectedStatus = getSelectedStatus();
+  const tbody = document.getElementById("detail-tbody");
+  const countEl = document.getElementById("detail-count");
+  if (!tbody || !countEl) return;
+  const rows = (DETAIL_ROWS || [])
+    .filter(row => !selectedTipos.size || selectedTipos.has(String(row.tipo || "").trim()))
+    .filter(row => selectedStatus === "Todos" || String(row.status || "").trim() === selectedStatus)
+    .slice()
+    .sort((a, b) => (Number(b.ultima_atualizacao_ts || 0) - Number(a.ultima_atualizacao_ts || 0)));
+  countEl.textContent = Number(rows.length || 0).toLocaleString("pt-BR");
+  if (!rows.length) {{
+    tbody.innerHTML = '<tr><td colspan="6" class="detail-empty">Sem registros para os filtros selecionados.</td></tr>';
+    return;
+  }}
+  tbody.innerHTML = rows.map(row => `
+    <tr>
+      <td>${{escapeHtml(row.Tag)}}</td>
+      <td>${{escapeHtml(row.Destino)}}</td>
+      <td>${{escapeHtml(row.Finalidade)}}</td>
+      <td>${{escapeHtml(row.ultima_atualizacao_str)}}</td>
+      <td>${{escapeHtml(row.status)}}</td>
+      <td>${{escapeHtml(row.responsavel)}}</td>
+    </tr>
+  `).join("");
 }}
 function refreshTipo() {{
   let selected = getSelectedTipos();
@@ -976,8 +1106,12 @@ function refreshTipo() {{
   renderBar("chart-cf", data.cf_dia.labels, data.cf_dia.values, "#5c8ce2", 290);
   renderStatus("chart-status", data.status.labels, data.status.values);
   renderBar("chart-pack", data.packing_dia.labels, data.packing_dia.values, "#77a2ee", 290);
+  renderDetailTable();
 }}
-document.addEventListener("DOMContentLoaded", () => refreshTipo());
+document.addEventListener("DOMContentLoaded", () => {{
+  refreshTipo();
+  renderDetailTable();
+}});
 </script>
 
 <footer>Atualizado automaticamente a cada 10 min &nbsp;·&nbsp; VTC LOG — BI Qualidade</footer>
