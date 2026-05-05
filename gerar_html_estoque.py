@@ -1,6 +1,8 @@
 """Gera ESTOQUE_DATALOGGERS.html replicando fielmente o dashboard_loggers_estoque.py"""
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
+import json
+from html import escape
 from pathlib import Path
 import unicodedata
 from datetime import datetime
@@ -180,6 +182,111 @@ def get_today_delta(df_daily: pd.DataFrame) -> tuple[int, int]:
     return t, t - y
 
 
+def _subset_types(df: pd.DataFrame, selected_types: set[str]) -> pd.DataFrame:
+    if df.empty:
+        return df.copy()
+    if not selected_types:
+        return df.copy()
+    if "_tipo_norm" not in df.columns:
+        return df.head(0).copy()
+    return df[df["_tipo_norm"].isin(selected_types)].copy()
+
+
+def _series_payload(df_daily: pd.DataFrame) -> dict:
+    if df_daily.empty:
+        return {"labels": [], "values": []}
+    out = df_daily.copy()
+    if "Dia" in out.columns:
+        out["Dia"] = pd.to_datetime(out["Dia"], errors="coerce").dt.strftime("%d/%m")
+    return {
+        "labels": out.get("Dia", pd.Series(dtype="object")).fillna("").astype(str).tolist(),
+        "values": out.get("Total", pd.Series(dtype="int64")).fillna(0).astype(int).tolist(),
+    }
+
+
+def _status_payload(status_df: pd.DataFrame) -> dict:
+    if status_df.empty:
+        return {"labels": [], "values": []}
+    top = status_df.head(12).sort_values("Total", ascending=True)
+    return {
+        "labels": top["Status"].fillna("").astype(str).tolist(),
+        "values": top["Total"].fillna(0).astype(int).tolist(),
+    }
+
+
+def _summarize_state(
+    df_estoque_geral: pd.DataFrame,
+    df_mov_cf: pd.DataFrame,
+    df_rec_est: pd.DataFrame,
+    df_packing: pd.DataFrame,
+    df_mov_recente_5d: pd.DataFrame,
+    label: str,
+) -> dict:
+    total_mov_cf = int(df_mov_cf["ds_tag"].nunique()) if "ds_tag" in df_mov_cf.columns else 0
+    total_rec_est = int(df_rec_est["ds_tag"].nunique()) if "ds_tag" in df_rec_est.columns else 0
+    total_packing = int(df_packing["ds_tag"].nunique()) if "ds_tag" in df_packing.columns else 0
+
+    total_estoque = 0
+    if not df_estoque_geral.empty and "situacao_oficial" in df_estoque_geral.columns:
+        est_base = df_estoque_geral.copy()
+        est_base["_sit_norm"] = est_base["situacao_oficial"].map(normalize_text)
+        est_base = est_base[est_base["_sit_norm"].eq("ESTOQUE - GRU")]
+        if "ds_tag" in est_base.columns:
+            total_estoque = int(
+                est_base["ds_tag"].dropna().astype(str).str.strip().loc[lambda s: s.ne("")].nunique()
+            )
+
+    ret_dia = daily_unique(df_rec_est, "dt_historico")
+    cf_dia = daily_unique(df_mov_cf, "dt_historico")
+    packing_dia = daily_unique(df_packing, "dt_historico")
+    resumo_ret, _ = get_today_delta(ret_dia)
+    resumo_cf, _ = get_today_delta(cf_dia)
+    resumo_emb, _ = get_today_delta(packing_dia)
+
+    apto_uso = resumo_cf_aguar = 0
+    if not df_estoque_geral.empty and {"situacao_oficial", "ds_tag"}.issubset(df_estoque_geral.columns):
+        sit = df_estoque_geral["situacao_oficial"].fillna("").astype(str).str.casefold()
+        for val, var_name in [("cf - apto ao uso", "apto"), ("cf - aguar. receber", "aguar")]:
+            tags_set = {t for t in normalize_tag_series(df_estoque_geral.loc[sit.eq(val), "ds_tag"]) if t}
+            if tags_set and "ds_tag" in df_mov_recente_5d.columns:
+                mov_set = {t for t in normalize_tag_series(df_mov_recente_5d["ds_tag"]) if t}
+                count = len(tags_set.intersection(mov_set))
+                if var_name == "apto":
+                    apto_uso = count
+                else:
+                    resumo_cf_aguar = count
+
+    status_df = pd.DataFrame()
+    map_coverage = 0.0
+    if not df_estoque_geral.empty and "situacao_oficial" in df_estoque_geral.columns:
+        s = df_estoque_geral["situacao_oficial"].fillna("Sem Mapeamento").astype(str).str.strip()
+        status_df = s.value_counts().rename_axis("Status").reset_index(name="Total")
+        map_coverage = (df_estoque_geral["situacao_oficial"] != "Sem Mapeamento").mean() * 100
+
+    ultima_atualizacao = pd.NaT
+    if not df_estoque_geral.empty and "dt_atualizacao" in df_estoque_geral.columns:
+        ultima_atualizacao = df_estoque_geral["dt_atualizacao"].max()
+
+    return {
+        "label": label,
+        "total_mov_cf": total_mov_cf,
+        "total_rec_est": total_rec_est,
+        "total_packing": total_packing,
+        "total_estoque": total_estoque,
+        "resumo_ret": resumo_ret,
+        "resumo_cf": resumo_cf,
+        "resumo_emb": resumo_emb,
+        "apto_uso": apto_uso,
+        "resumo_cf_aguar": resumo_cf_aguar,
+        "map_coverage": round(float(map_coverage), 1),
+        "ultima_atualizacao": ultima_atualizacao.strftime("%d/%m/%Y %H:%M") if pd.notna(ultima_atualizacao) else "Sem dados",
+        "ret_dia": _series_payload(ret_dia),
+        "cf_dia": _series_payload(cf_dia),
+        "packing_dia": _series_payload(packing_dia),
+        "status": _status_payload(status_df),
+    }
+
+
 # ── charts ────────────────────────────────────────────────────────────────────
 
 def _style(fig, height=300):
@@ -245,6 +352,16 @@ body{background:radial-gradient(900px 260px at 0% -10%,#13233f 0%,rgba(19,35,63,
 .hero-meta{margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;}
 .hero-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
   background:rgba(9,15,28,.34);border:1px solid rgba(173,200,232,.2);color:#dfeaf8;font-size:.78rem;}
+.filter-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px 0;}
+.tipo-label-sm{font-size:.85rem;color:#9fb7d4;font-weight:600;white-space:nowrap;}
+.device-select{background:#13243c;border:1px solid #2b466b;border-radius:8px;color:#dceafe;
+  cursor:pointer;font-size:.88rem;font-weight:600;padding:6px 12px;min-width:240px;outline:none;}
+.device-select:hover{background:#1a3358;border-color:#3a6090;}
+.device-select:focus{border-color:#4f94da;box-shadow:0 0 0 2px rgba(47,128,208,.18);}
+.meta-strip{background:linear-gradient(180deg,var(--bg-panel) 0%,var(--bg-panel-2) 100%);
+  border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:8px 0 12px;color:#b7cbe4;
+  font-size:.92rem;line-height:1.6;}
+.meta-strip strong{color:#d7e6fb;font-weight:700;}
 .caption{font-size:.78rem;color:#7a90a8;margin-bottom:10px;}
 .section-head{display:flex;align-items:baseline;justify-content:space-between;margin:10px 2px 8px 2px;}
 .section-title{margin:0;font-size:1.02rem;font-weight:800;color:#dceafe;letter-spacing:.01em;}
@@ -515,6 +632,284 @@ def generate_html(
 </html>"""
 
 
+def generate_html_tipo(
+    df_estoque_geral: pd.DataFrame,
+    df_mov_cf: pd.DataFrame,
+    df_rec_est: pd.DataFrame,
+    df_packing: pd.DataFrame,
+    df_mov_recente_5d: pd.DataFrame,
+) -> str:
+    for df, col in [
+        (df_estoque_geral, "dt_atualizacao"),
+        (df_mov_cf, "dt_historico"),
+        (df_rec_est, "dt_historico"),
+        (df_packing, "dt_historico"),
+        (df_mov_recente_5d, "dt_historico"),
+    ]:
+        df[col] = pd.to_datetime(df[col], errors="coerce")
+
+    aux_map = load_aux_map()
+    df_estoque_geral = apply_aux_status(df_estoque_geral, aux_map)
+    if "ds_tipodatalogger" in df_estoque_geral.columns:
+        df_estoque_geral["_tipo_norm"] = df_estoque_geral["ds_tipodatalogger"].map(normalize_text)
+        df_estoque_geral = df_estoque_geral[df_estoque_geral["_tipo_norm"].isin(DEVICE_TYPES)].copy()
+
+    tag_tipo_map = pd.DataFrame(columns=["_tag_norm", "_tipo_norm"])
+    if not df_estoque_geral.empty and {"ds_tag", "_tipo_norm"}.issubset(df_estoque_geral.columns):
+        tag_tipo_map = (
+            df_estoque_geral[["ds_tag", "_tipo_norm"]]
+            .copy()
+            .assign(_tag_norm=lambda d: normalize_tag_series(d["ds_tag"]))
+            .dropna(subset=["_tipo_norm"])
+            .drop_duplicates(subset=["_tag_norm"], keep="first")[["_tag_norm", "_tipo_norm"]]
+        )
+
+    def _filter_hist(df: pd.DataFrame) -> pd.DataFrame:
+        out = df.copy()
+        if out.empty or "ds_tag" not in out.columns:
+            return out
+        out["_tag_norm"] = normalize_tag_series(out["ds_tag"])
+        if not tag_tipo_map.empty:
+            out = out.merge(tag_tipo_map, how="left", on="_tag_norm")
+        if "_tipo_norm" in out.columns:
+            out = out[out["_tipo_norm"].isin(DEVICE_TYPES)].copy()
+        return out
+
+    df_mov_cf = _filter_hist(df_mov_cf)
+    df_rec_est = _filter_hist(df_rec_est)
+    df_packing = _filter_hist(df_packing)
+    df_mov_recente_5d = _filter_hist(df_mov_recente_5d)
+
+    def _state(label: str, dfe: pd.DataFrame, dffc: pd.DataFrame, dfre: pd.DataFrame, dfpa: pd.DataFrame, dfr5: pd.DataFrame) -> dict:
+        total_mov_cf = int(dffc["ds_tag"].nunique()) if "ds_tag" in dffc.columns else 0
+        total_rec_est = int(dfre["ds_tag"].nunique()) if "ds_tag" in dfre.columns else 0
+        total_packing = int(dfpa["ds_tag"].nunique()) if "ds_tag" in dfpa.columns else 0
+        total_estoque = 0
+        if not dfe.empty and "situacao_oficial" in dfe.columns:
+            est_base = dfe.copy()
+            est_base["_sit_norm"] = est_base["situacao_oficial"].map(normalize_text)
+            est_base = est_base[est_base["_sit_norm"].eq("ESTOQUE - GRU")]
+            if "ds_tag" in est_base.columns:
+                total_estoque = int(est_base["ds_tag"].dropna().astype(str).str.strip().loc[lambda s: s.ne("")].nunique())
+        ret_dia = daily_unique(dfre, "dt_historico")
+        cf_dia = daily_unique(dffc, "dt_historico")
+        pack_dia = daily_unique(dfpa, "dt_historico")
+        resumo_ret, _ = get_today_delta(ret_dia)
+        resumo_cf, _ = get_today_delta(cf_dia)
+        resumo_emb, _ = get_today_delta(pack_dia)
+        apto_uso = 0
+        resumo_cf_aguar = 0
+        if not dfe.empty and {"situacao_oficial", "ds_tag"}.issubset(dfe.columns):
+            sit = dfe["situacao_oficial"].fillna("").astype(str).str.casefold()
+            for val, var_name in [("cf - apto ao uso", "apto"), ("cf - aguar. receber", "aguar")]:
+                tags_set = {t for t in normalize_tag_series(dfe.loc[sit.eq(val), "ds_tag"]) if t}
+                if tags_set and "ds_tag" in dfr5.columns:
+                    mov_set = {t for t in normalize_tag_series(dfr5["ds_tag"]) if t}
+                    count = len(tags_set.intersection(mov_set))
+                    if var_name == "apto":
+                        apto_uso = count
+                    else:
+                        resumo_cf_aguar = count
+        status_df = pd.DataFrame()
+        map_coverage = 0.0
+        if not dfe.empty and "situacao_oficial" in dfe.columns:
+            s = dfe["situacao_oficial"].fillna("Sem Mapeamento").astype(str).str.strip()
+            status_df = s.value_counts().rename_axis("Status").reset_index(name="Total")
+            map_coverage = (dfe["situacao_oficial"] != "Sem Mapeamento").mean() * 100
+        ultima_atualizacao = pd.NaT
+        if not dfe.empty and "dt_atualizacao" in dfe.columns:
+            ultima_atualizacao = dfe["dt_atualizacao"].max()
+        return {
+            "label": label,
+            "total_mov_cf": total_mov_cf,
+            "total_rec_est": total_rec_est,
+            "total_packing": total_packing,
+            "total_estoque": total_estoque,
+            "resumo_ret": resumo_ret,
+            "resumo_cf": resumo_cf,
+            "resumo_emb": resumo_emb,
+            "apto_uso": apto_uso,
+            "resumo_cf_aguar": resumo_cf_aguar,
+            "map_coverage": round(float(map_coverage), 1),
+            "ultima_atualizacao": ultima_atualizacao.strftime("%d/%m/%Y %H:%M") if pd.notna(ultima_atualizacao) else "Sem dados",
+            "ret_dia": {"labels": ret_dia["Dia"].astype(str).tolist() if not ret_dia.empty else [], "values": ret_dia["Total"].astype(int).tolist() if not ret_dia.empty else []},
+            "cf_dia": {"labels": cf_dia["Dia"].astype(str).tolist() if not cf_dia.empty else [], "values": cf_dia["Total"].astype(int).tolist() if not cf_dia.empty else []},
+            "packing_dia": {"labels": pack_dia["Dia"].astype(str).tolist() if not pack_dia.empty else [], "values": pack_dia["Total"].astype(int).tolist() if not pack_dia.empty else []},
+            "status": {
+                "labels": status_df.head(12).sort_values("Total", ascending=True)["Status"].astype(str).tolist() if not status_df.empty else [],
+                "values": status_df.head(12).sort_values("Total", ascending=True)["Total"].astype(int).tolist() if not status_df.empty else [],
+            },
+        }
+
+    states = {"ALL": _state("Todos os tipos", df_estoque_geral, df_mov_cf, df_rec_est, df_packing, df_mov_recente_5d)}
+    for tipo in sorted(DEVICE_TYPES):
+        states[tipo] = _state(
+            tipo,
+            _subset_types(df_estoque_geral, {tipo}),
+            _subset_types(df_mov_cf, {tipo}),
+            _subset_types(df_rec_est, {tipo}),
+            _subset_types(df_packing, {tipo}),
+            _subset_types(df_mov_recente_5d, {tipo}),
+        )
+
+    states_json = json.dumps(states, ensure_ascii=False)
+    tipo_options_html = "".join(f'<option value="{escape(tipo)}">{escape(tipo)}</option>' for tipo in sorted(DEVICE_TYPES))
+    all_state = states["ALL"]
+    gerado = datetime.now().strftime("%d/%m/%Y %H:%M")
+    today_str = pd.Timestamp.now().strftime("%d/%m/%Y")
+
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gestão de Dispositivos — Estoque e Câmara Fria</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+{CSS}
+</head>
+<body>
+
+<div class="hero-wrap">
+  <h1 class="hero-title">Gestão de Dispositivos</h1>
+  <div class="hero-sub">Estoque, Câmara Fria e Volumes Embalados &nbsp;·&nbsp; Últimos {BASE_DAYS} dias &nbsp;·&nbsp; Gerado em {gerado}</div>
+  <div class="hero-meta">
+    <span class="hero-pill">Data da última atualização: <span id="meta-update">{all_state["ultima_atualizacao"]}</span></span>
+  </div>
+</div>
+
+<div class="filter-row">
+  <span class="tipo-label-sm">Filtro por tipo de equipamento</span>
+  <select id="tipo-select" class="device-select" onchange="switchTipo(this.value)">
+    <option value="ALL">Todos os tipos</option>
+    {tipo_options_html}
+  </select>
+</div>
+
+<div class="meta-strip">
+  <strong>Tipo aplicado:</strong> <span id="meta-tipo">Todos os tipos</span> &nbsp;|&nbsp;
+  <strong>Cobertura do mapeamento:</strong> <span id="meta-coverage">{all_state["map_coverage"]:.1f}%</span> &nbsp;|&nbsp;
+  <strong>Atualizado em:</strong> <span id="meta-gerado">{gerado}</span>
+</div>
+
+<div class="critical-strip">
+  <div class="critical-card">
+    <div class="critical-head">
+      <div class="critical-title">Disponível para Utilizar</div>
+      <div id="badge-disponivel"></div>
+    </div>
+    <div class="critical-value" id="critical-disponivel">{fmt(all_state["apto_uso"])}</div>
+    <div class="resumo-meta">Movimentação nos últimos 5 dias</div>
+  </div>
+  <div class="critical-card">
+    <div class="critical-head">
+      <div class="critical-title">Aguardando Recebimento</div>
+      <div id="badge-aguardando"></div>
+    </div>
+    <div class="critical-value" id="critical-aguardando">{fmt(all_state["resumo_cf_aguar"])}</div>
+    <div class="resumo-meta">Movimentação nos últimos 5 dias</div>
+  </div>
+</div>
+
+<div class="resumo-wrap">
+  <div class="resumo-title">Resumo do Dia ({today_str})</div>
+  <div class="resumo-grid-main">
+    <div class="resumo-card">
+      <div class="resumo-label">Entregues à Câmara Fria</div>
+      <div class="resumo-value" id="resumo-cf">{fmt(all_state["resumo_cf"])}</div>
+    </div>
+    <div class="resumo-card">
+      <div class="resumo-label">Volumes Embalados</div>
+      <div class="resumo-value" id="resumo-emb">{fmt(all_state["resumo_emb"])}</div>
+    </div>
+    <div class="resumo-card">
+      <div class="resumo-label">Retornados ao Estoque</div>
+      <div class="resumo-value" id="resumo-ret">{fmt(all_state["resumo_ret"])}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-head">
+  <h3 class="section-title">Indicadores Gerais</h3>
+  <p class="section-note">Período: últimos {BASE_DAYS} dias</p>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-title">Retornados ao Estoque</div><div class="kpi-value" id="kpi-rec">{fmt(all_state["total_rec_est"])}</div></div>
+  <div class="kpi-card"><div class="kpi-title">Entregues à Câmara Fria</div><div class="kpi-value" id="kpi-cf">{fmt(all_state["total_mov_cf"])}</div></div>
+  <div class="kpi-card"><div class="kpi-title">Volumes Embalados</div><div class="kpi-value" id="kpi-pack">{fmt(all_state["total_packing"])}</div></div>
+  <div class="kpi-card"><div class="kpi-title">Estoque Atual (GRU)</div><div class="kpi-value" id="kpi-estoque">{fmt(all_state["total_estoque"])}</div></div>
+</div>
+
+<div class="section-head">
+  <h3 class="section-title">Gráficos — Últimos 7 dias</h3>
+  <p class="section-note">A seleção acima atualiza todos os indicadores</p>
+</div>
+<div class="charts">
+  <div class="chart-box"><div class="chart-title">Retornados ao Estoque</div><div id="chart-ret" style="height:290px"></div></div>
+  <div class="chart-box"><div class="chart-title">Entregues à Câmara Fria</div><div id="chart-cf" style="height:290px"></div></div>
+  <div class="chart-box"><div class="chart-title">Status Geral dos Dataloggers (Top 12)</div><div id="chart-status" style="height:430px"></div></div>
+  <div class="chart-box"><div class="chart-title">Volumes Embalados</div><div id="chart-pack" style="height:290px"></div></div>
+</div>
+
+<script>
+const STATES = {states_json};
+const PLOTLY_CFG = {{displayModeBar:false, responsive:true}};
+const BASE_LAYOUT = {{
+  paper_bgcolor: "#141b26",
+  plot_bgcolor: "#141b26",
+  title_text: "",
+  font: {{color: "#e8edf5"}},
+  xaxis: {{gridcolor: "#2b3a4d", zerolinecolor: "#2b3a4d", linecolor: "#2b3a4d", tickfont: {{color: "#d3dceb"}}}},
+  yaxis: {{gridcolor: "#2b3a4d", zerolinecolor: "#2b3a4d", linecolor: "#2b3a4d", tickfont: {{color: "#d3dceb"}}}},
+  hoverlabel: {{bgcolor: "#1b2635", font: {{color: "#f1f5fb"}}}},
+  margin: {{l: 10, r: 40, t: 20, b: 10}}
+}};
+function fmt(n) {{ return Number(n || 0).toLocaleString("pt-BR"); }}
+function setText(id, value) {{ const el = document.getElementById(id); if (el) el.textContent = value; }}
+function badgeHtml(valueA, valueB) {{
+  if (valueA === valueB) return "";
+  const label = valueA > valueB ? "critico" : "normal";
+  const cls = label === "critico" ? "badge-critical" : "badge-normal";
+  return "<div class=\"badge " + cls + "\">" + label + "</div>";
+}}
+function renderBar(id, labels, values, color, height) {{
+  Plotly.react(id, [{{x: labels || [], y: values || [], type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {{color}} }}], {{...BASE_LAYOUT, height}}, PLOTLY_CFG);
+}}
+function renderStatus(id, labels, values) {{
+  Plotly.react(id, [{{x: values || [], y: labels || [], orientation: "h", type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {{color: "#274a9f"}} }}], {{...BASE_LAYOUT, height: 430}}, PLOTLY_CFG);
+}}
+function switchTipo(tipo) {{
+  const data = STATES[tipo] || STATES.ALL;
+  setText("meta-tipo", data.label || "Todos os tipos");
+  setText("meta-coverage", String(data.map_coverage).replace(".", ",") + "%");
+  setText("meta-update", data.ultima_atualizacao || "Sem dados");
+  setText("critical-disponivel", fmt(data.apto_uso));
+  setText("critical-aguardando", fmt(data.resumo_cf_aguar));
+  setText("resumo-cf", fmt(data.resumo_cf));
+  setText("resumo-emb", fmt(data.resumo_emb));
+  setText("resumo-ret", fmt(data.resumo_ret));
+  setText("kpi-rec", fmt(data.total_rec_est));
+  setText("kpi-cf", fmt(data.total_mov_cf));
+  setText("kpi-pack", fmt(data.total_packing));
+  setText("kpi-estoque", fmt(data.total_estoque));
+  const badgeDisp = document.getElementById("badge-disponivel");
+  const badgeAg = document.getElementById("badge-aguardando");
+  if (badgeDisp) badgeDisp.innerHTML = badgeHtml(data.apto_uso, data.resumo_cf_aguar);
+  if (badgeAg) badgeAg.innerHTML = badgeHtml(data.resumo_cf_aguar, data.apto_uso);
+  renderBar("chart-ret", data.ret_dia.labels, data.ret_dia.values, "#4d7ed5", 290);
+  renderBar("chart-cf", data.cf_dia.labels, data.cf_dia.values, "#5c8ce2", 290);
+  renderStatus("chart-status", data.status.labels, data.status.values);
+  renderBar("chart-pack", data.packing_dia.labels, data.packing_dia.values, "#77a2ee", 290);
+  const sel = document.getElementById("tipo-select");
+  if (sel && sel.value !== tipo) sel.value = tipo;
+}}
+document.addEventListener("DOMContentLoaded", () => switchTipo("ALL"));
+</script>
+
+<footer>Atualizado automaticamente a cada 10 min &nbsp;·&nbsp; VTC LOG — BI Qualidade</footer>
+</body>
+</html>"""
+
+
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -536,7 +931,7 @@ def main():
         df_recente = f_recente.result()
 
     print(f"  [estoque] geral={len(df_geral)} cf={len(df_cf)} est={len(df_est)} pack={len(df_pack)} recente={len(df_recente)}")
-    html = generate_html(df_geral, df_cf, df_est, df_pack, df_recente)
+    html = generate_html_tipo(df_geral, df_cf, df_est, df_pack, df_recente)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
     print(f"  [estoque] HTML salvo: {OUTPUT_FILE.name}")
 
