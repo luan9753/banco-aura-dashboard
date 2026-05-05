@@ -519,18 +519,17 @@ function renderChart(id, traces, layout){{
   const el = document.getElementById(id);
   if (!el) return;
   const hasData = traces && traces.length && traces[0] &&
-    (traces[0].x||[]).length + (traces[0].y||[]).length > 0;
+    ((traces[0].x||[]).length > 0 || (traces[0].y||[]).length > 0);
+  if (el._fullLayout) Plotly.purge(el);
   if (!hasData) {{
     el.innerHTML = '<div class="chart-empty">Sem dados no periodo selecionado</div>';
     return;
   }}
-  if (window.Plotly && Plotly.purge) Plotly.purge(el);
-  el.innerHTML = "";
-  requestAnimationFrame(() => {{
-    Plotly.newPlot(el, traces, layout, cfg)
-      .then(() => {{ if (Plotly.Plots && Plotly.Plots.resize) Plotly.Plots.resize(el); }})
-      .catch(() => {{ el.innerHTML = '<div class="chart-empty">Erro ao carregar grafico</div>'; }});
-  }});
+  // Copia profunda do layout para evitar que Plotly mute o objeto e
+  // quebre renders subsequentes (causa do bug d="M0,0Z").
+  const lay = JSON.parse(JSON.stringify(layout));
+  Plotly.newPlot(el, traces, lay, cfg)
+    .catch(() => {{ el.innerHTML = '<div class="chart-empty">Erro ao carregar grafico</div>'; }});
 }}
 
 function buildTableRows(rows){{
@@ -589,12 +588,13 @@ function switchTab(tab){{
   document.getElementById("tab-exec-btn").classList.toggle("active",    tab === "exec");
   document.getElementById("tab-detalhe-btn").classList.toggle("active", tab === "detalhe");
   if (tab === "exec") {{
-    setTimeout(() => {{
-      ["chart-ag","chart-pend","chart-trend","chart-uf","chart-risk","chart-rec7"].forEach(id => {{
-        const el = document.getElementById(id);
-        if (el && Plotly.Plots && Plotly.Plots.resize) Plotly.Plots.resize(el);
+    // Refit apos mostrar o container (que estava display:none)
+    requestAnimationFrame(() => {{
+      ["chart-ag","chart-pend","chart-trend","chart-uf","chart-risk","chart-rec7"].forEach(cid => {{
+        const cel = document.getElementById(cid);
+        if (cel && cel._fullLayout) Plotly.Plots.resize(cel);
       }});
-    }}, 50);
+    }});
   }}
 }}
 
