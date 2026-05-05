@@ -100,7 +100,7 @@ footer{margin-top:20px;font-size:.75rem;color:#556070;text-align:right;}
 
 <div class="hero-wrap">
   <h1 class="hero-title">Gestão de Dispositivos</h1>
-  <div class="hero-sub">Estoque, Câmara Fria e Volumes Embalados &nbsp;·&nbsp; Últimos 7 dias &nbsp;·&nbsp; Gerado em 05/05/2026 18:37</div>
+  <div class="hero-sub">Estoque, Câmara Fria e Volumes Embalados &nbsp;·&nbsp; Últimos 7 dias &nbsp;·&nbsp; Gerado em 05/05/2026 18:45</div>
   <div class="hero-meta">
     <span class="hero-pill">Data da última atualização: <span id="meta-update">05/05/2026 18:03</span></span>
   </div>
@@ -117,7 +117,7 @@ footer{margin-top:20px;font-size:.75rem;color:#556070;text-align:right;}
 <div class="meta-strip">
   <strong>Tipo aplicado:</strong> <span id="meta-tipo">Todos os tipos</span> &nbsp;|&nbsp;
   <strong>Cobertura do mapeamento:</strong> <span id="meta-coverage">97.3%</span> &nbsp;|&nbsp;
-  <strong>Atualizado em:</strong> <span id="meta-gerado">05/05/2026 18:37</span>
+  <strong>Atualizado em:</strong> <span id="meta-gerado">05/05/2026 18:45</span>
 </div>
 
 <div class="critical-strip">
@@ -201,10 +201,42 @@ function badgeHtml(valueA, valueB) {
   return "<div class='badge " + cls + "'>" + label + "</div>";
 }
 function renderBar(id, labels, values, color, height) {
-  Plotly.react(id, [{x: labels || [], y: values || [], type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {color} }], {...BASE_LAYOUT, height}, PLOTLY_CFG);
+  Plotly.react(id, [{
+    x: labels || [],
+    y: values || [],
+    type: "bar",
+    text: (values || []).map(v => String(v)),
+    textposition: "outside",
+    cliponaxis: false,
+    marker: {color}
+  }], {
+    ...BASE_LAYOUT,
+    height,
+    margin: {l: 30, r: 20, t: 20, b: 40}
+  }, PLOTLY_CFG);
 }
 function renderStatus(id, labels, values) {
-  Plotly.react(id, [{x: values || [], y: labels || [], orientation: "h", type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {color: "#274a9f"} }], {...BASE_LAYOUT, height: 430}, PLOTLY_CFG);
+  Plotly.react(id, [{
+    x: labels || [],
+    y: values || [],
+    type: "bar",
+    text: (values || []).map(v => String(v)),
+    textposition: "outside",
+    cliponaxis: false,
+    marker: {color: "#274a9f"}
+  }], {
+    ...BASE_LAYOUT,
+    height: 430,
+    margin: {l: 40, r: 20, t: 20, b: 120},
+    xaxis: {
+      gridcolor: "#2b3a4d",
+      zerolinecolor: "#2b3a4d",
+      linecolor: "#2b3a4d",
+      tickfont: {color: "#d3dceb"},
+      tickangle: -35,
+      automargin: true
+    }
+  }, PLOTLY_CFG);
 }
 function getSelectedTipos() {
   return Array.from(document.querySelectorAll(".tipo-checkbox"))

@@ -889,10 +889,42 @@ function badgeHtml(valueA, valueB) {{
   return "<div class='badge " + cls + "'>" + label + "</div>";
 }}
 function renderBar(id, labels, values, color, height) {{
-  Plotly.react(id, [{{x: labels || [], y: values || [], type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {{color}} }}], {{...BASE_LAYOUT, height}}, PLOTLY_CFG);
+  Plotly.react(id, [{{
+    x: labels || [],
+    y: values || [],
+    type: "bar",
+    text: (values || []).map(v => String(v)),
+    textposition: "outside",
+    cliponaxis: false,
+    marker: {{color}}
+  }}], {{
+    ...BASE_LAYOUT,
+    height,
+    margin: {{l: 30, r: 20, t: 20, b: 40}}
+  }}, PLOTLY_CFG);
 }}
 function renderStatus(id, labels, values) {{
-  Plotly.react(id, [{{x: values || [], y: labels || [], orientation: "h", type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {{color: "#274a9f"}} }}], {{...BASE_LAYOUT, height: 430}}, PLOTLY_CFG);
+  Plotly.react(id, [{{
+    x: labels || [],
+    y: values || [],
+    type: "bar",
+    text: (values || []).map(v => String(v)),
+    textposition: "outside",
+    cliponaxis: false,
+    marker: {{color: "#274a9f"}}
+  }}], {{
+    ...BASE_LAYOUT,
+    height: 430,
+    margin: {{l: 40, r: 20, t: 20, b: 120}},
+    xaxis: {{
+      gridcolor: "#2b3a4d",
+      zerolinecolor: "#2b3a4d",
+      linecolor: "#2b3a4d",
+      tickfont: {{color: "#d3dceb"}},
+      tickangle: -35,
+      automargin: true
+    }}
+  }}, PLOTLY_CFG);
 }}
 function getSelectedTipos() {{
   return Array.from(document.querySelectorAll(".tipo-checkbox"))
