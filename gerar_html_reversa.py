@@ -348,7 +348,7 @@ footer{margin-top:24px;font-size:.75rem;color:#556070;text-align:right;}
 
 # ── HTML template ─────────────────────────────────────────────────────────────
 
-def generate_html(periods_data: dict[int, dict], gerado: str) -> str:
+def generate_html(periods_data: dict[int, dict], gerado: str, hist_last: str) -> str:
     pad = periods_data[PERIODO_PAD]
     periods_json = json.dumps({str(k): v for k, v in periods_data.items()},
                                ensure_ascii=False, default=str)
@@ -385,7 +385,7 @@ def generate_html(periods_data: dict[int, dict], gerado: str) -> str:
 
 <div class="meta-strip">
   <strong>Periodo aplicado:</strong> <span id="meta-period">{pad["period_txt"]}</span><br>
-  <strong>Ultima atualizacao da tela:</strong> {gerado}
+  <strong>Ultima atualizacao do historico:</strong> {hist_last} &nbsp;|&nbsp; <strong>Ultima atualizacao da tela:</strong> {gerado}
 </div>
 
 <div class="kpi-grid">
@@ -632,6 +632,11 @@ def main():
     print(f"[reversa] Modelo completo: {len(model_full)} registros")
 
     gerado = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    # Ultima atualizacao do historico = max(Ultimo_Historico) do modelo completo
+    hist_ts = pd.to_datetime(model_full.get("Ultimo_Historico"), errors="coerce").max()
+    hist_last = hist_ts.strftime("%d/%m/%Y %H:%M:%S") if pd.notna(hist_ts) else "Sem historico"
+
     periods_data: dict[int, dict] = {}
     for days in PERIODOS:
         cutoff = pd.Timestamp.now() - pd.Timedelta(days=days)
@@ -642,7 +647,7 @@ def main():
         print(f"[reversa] Periodo {days}d: {len(df_p)} registros, "
               f"tabela: {len(periods_data[days]['table']['rows'])} linhas")
 
-    html = generate_html(periods_data, gerado)
+    html = generate_html(periods_data, gerado, hist_last)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
     print(f"[reversa] HTML salvo: {OUTPUT_FILE}")
 
