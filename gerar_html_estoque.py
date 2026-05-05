@@ -886,7 +886,7 @@ function badgeHtml(valueA, valueB) {{
   if (valueA === valueB) return "";
   const label = valueA > valueB ? "critico" : "normal";
   const cls = label === "critico" ? "badge-critical" : "badge-normal";
-  return "<div class=\"badge " + cls + "\">" + label + "</div>";
+  return "<div class='badge " + cls + "'>" + label + "</div>";
 }}
 function renderBar(id, labels, values, color, height) {{
   Plotly.react(id, [{{x: labels || [], y: values || [], type: "bar", text: (values || []).map(v => String(v)), textposition: "outside", marker: {{color}} }}], {{...BASE_LAYOUT, height}}, PLOTLY_CFG);
