@@ -314,12 +314,21 @@ body{background:
 .tipo-btn:hover{background:#1a3358;color:#dceafe;border-color:#3a6090;}
 .tipo-btn.active{background:linear-gradient(135deg,#1d4f8f 0%,#2f80d0 100%);
   border-color:#4f94da;color:#fff;}
-.uf-row{display:flex;align-items:center;gap:10px;margin:10px 0 0;flex-wrap:wrap;}
+.filter-row{display:flex;align-items:center;gap:10px;margin:10px 0 0;flex-wrap:wrap;}
 .uf-select{background:#13243c;border:1px solid #2b466b;border-radius:8px;
   color:#dceafe;cursor:pointer;font-size:.88rem;font-weight:600;padding:6px 12px;
   min-width:220px;outline:none;}
 .uf-select:hover{background:#1a3358;border-color:#3a6090;}
 .uf-select:focus{border-color:#4f94da;box-shadow:0 0 0 2px rgba(47,128,208,.18);}
+.agent-input{background:#13243c;border:1px solid #2b466b;border-radius:8px;
+  color:#dceafe;font-size:.88rem;font-weight:600;padding:6px 12px;
+  min-width:320px;outline:none;}
+.agent-input:hover{background:#1a3358;border-color:#3a6090;}
+.agent-input:focus{border-color:#4f94da;box-shadow:0 0 0 2px rgba(47,128,208,.18);}
+.clear-btn{background:#13243c;border:1px solid #2b466b;border-radius:8px;
+  color:#9fb7d4;cursor:pointer;font-size:.82rem;font-weight:600;padding:6px 12px;
+  transition:background .15s,color .15s,border-color .15s;}
+.clear-btn:hover{background:#1a3358;color:#dceafe;border-color:#3a6090;}
 .tabs-bar{display:flex;gap:6px;margin:6px 0 0;border-bottom:1px solid #24344d;padding-bottom:0;}
 .tab-btn{background:#131d30;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;
   padding:9px 18px;color:#ced9ea;cursor:pointer;font-size:.95rem;font-weight:600;
@@ -366,7 +375,7 @@ footer{margin-top:24px;font-size:.75rem;color:#556070;text-align:right;}
 # ── HTML template ─────────────────────────────────────────────────────────────
 
 def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
-                  ufs: list[str], gerado: str, hist_last: str) -> str:
+                  ufs: list[str], agentes: list[str], gerado: str, hist_last: str) -> str:
     pad = periods_data[PERIODO_PAD][""]
     periods_json = json.dumps(
         {str(k): {t: v for t, v in tv.items()} for k, tv in periods_data.items()},
@@ -388,6 +397,10 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
     uf_options_html = "".join(
         f'<option value="{escape(uf)}">{escape(uf)}</option>'
         for uf in ufs
+    )
+    agente_options_html = "".join(
+        f'<option value="{escape(ag)}">{escape(ag)}</option>'
+        for ag in agentes
     )
     tbl_headers = "".join(f"<th>{h}</th>" for h in pad["table"]["headers"])
 
@@ -419,7 +432,17 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
   {tipo_btns_html}
 </div>
 
-<div class="uf-row">
+<div class="filter-row">
+  <span class="tipo-label-sm">Filtro por Agente</span>
+  <input id="agente-input" class="agent-input" type="text" list="agente-options"
+         placeholder="Digite o agente" oninput="switchAgente(this.value)">
+  <datalist id="agente-options">
+    {agente_options_html}
+  </datalist>
+  <button class="clear-btn" type="button" onclick="clearAgente()">Limpar</button>
+</div>
+
+<div class="filter-row">
   <span class="tipo-label-sm">Filtro por UF</span>
   <select id="uf-select" class="uf-select" onchange="switchUf(this.value)">
     <option value="">Todas as UFs</option>
@@ -429,6 +452,7 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
 
 <div class="meta-strip">
   <strong>Periodo aplicado:</strong> <span id="meta-period">{pad["period_txt"]}</span><br>
+  <strong>Agente aplicado:</strong> <span id="meta-agente">Todos os agentes</span> &nbsp;|&nbsp;
   <strong>UF aplicada:</strong> <span id="meta-uf">Todas as UFs</span> &nbsp;|&nbsp;
   <strong>Ultima atualizacao do historico:</strong> {hist_last} &nbsp;|&nbsp; <strong>Ultima atualizacao da tela:</strong> {gerado}
 </div>
@@ -607,6 +631,7 @@ function buildCsvHref(headers, rows){{
 let _currentDays = DEFAULT_PERIOD;
 let _currentTipo = "";
 let _currentUf = "";
+let _currentAgente = "";
 
 function escapeHtml(value){{
   return String(value ?? "")
@@ -619,6 +644,20 @@ function escapeHtml(value){{
 
 function normalizeUf(value){{
   return String(value ?? "").trim().toUpperCase();
+}}
+
+function normalizeText(value){{
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}}
+
+function matchesAgente(rowAgente, filtro){{
+  const f = normalizeText(filtro);
+  if (!f) return true;
+  return normalizeText(rowAgente).includes(f);
 }}
 
 function parseBrDate(value){{
@@ -768,10 +807,14 @@ function renderAll(days, tipo){{
   const d = byTipo[tipo !== undefined ? tipo : ""] || byTipo[""];
   if (!d) return;
 
-  const rows = (d.csv_rows || []).filter(r => !_currentUf || normalizeUf(r[3]) === _currentUf);
+  const rows = (d.csv_rows || []).filter(r =>
+    (!_currentUf || normalizeUf(r[3]) === _currentUf) &&
+    matchesAgente(r[6], _currentAgente)
+  );
   const computed = computePeriodData(rows, days);
 
   document.getElementById("meta-period").textContent     = computed.period_txt;
+  document.getElementById("meta-agente").textContent     = _currentAgente || "Todos os agentes";
   document.getElementById("meta-uf").textContent         = _currentUf || "Todas as UFs";
   document.getElementById("kpi-pedidos").textContent     = computed.kpi.pedidos;
   document.getElementById("kpi-loggers").textContent     = computed.kpi.loggers;
@@ -811,6 +854,18 @@ function switchTipo(tipo){{
 
 function switchUf(uf){{
   _currentUf = uf;
+  renderAll(_currentDays, _currentTipo);
+}}
+
+function switchAgente(agente){{
+  _currentAgente = String(agente || "").trim();
+  renderAll(_currentDays, _currentTipo);
+}}
+
+function clearAgente(){{
+  const input = document.getElementById("agente-input");
+  if (input) input.value = "";
+  _currentAgente = "";
   renderAll(_currentDays, _currentTipo);
 }}
 
@@ -877,8 +932,16 @@ def main():
             if normalize_text_value(v)
         }
     )
+    agentes = sorted(
+        {
+            normalize_text_value(v)
+            for v in model_full.get("Agente", pd.Series(dtype="object")).dropna().unique()
+            if normalize_text_value(v)
+        }
+    )
     print(f"[reversa] Tipos disponiveis: {tipos}")
     print(f"[reversa] UFs disponiveis: {ufs}")
+    print(f"[reversa] Agentes disponiveis: {len(agentes)}")
 
     periods_data: dict[int, dict[str, dict]] = {}
     for days in PERIODOS:
@@ -897,7 +960,7 @@ def main():
         print(f"[reversa] Periodo {days}d: {n_all} registros | "
               + " | ".join(f"{t}:{len(df_p[df_p['Tipo Datalogger']==t])}" for t in tipos))
 
-    html = generate_html(periods_data, tipos, ufs, gerado, hist_last)
+    html = generate_html(periods_data, tipos, ufs, agentes, gerado, hist_last)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
     print(f"[reversa] HTML salvo: {OUTPUT_FILE}")
 
