@@ -71,7 +71,7 @@ echo [INFO] Sincronizando com origin/main antes do push...
 git pull --rebase origin main
 if errorlevel 1 set "ERRMSG=Falha ao sincronizar com o remoto (passo 3)." & goto :FAIL
 
-git push origin main
+git push origin HEAD:main
 if errorlevel 1 set "ERRMSG=Falha no git push (passo 3)." & goto :FAIL
 echo [OK] Push concluido com sucesso.
 
