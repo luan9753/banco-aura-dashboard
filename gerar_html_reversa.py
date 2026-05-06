@@ -11,7 +11,7 @@ import pandas as pd
 WORKSPACE    = Path(__file__).resolve().parents[1]
 SNAPSHOT_DIR = WORKSPACE / "snapshot_reversa"
 OUTPUT_FILE  = Path(__file__).resolve().parent / "REVERSA_DATALOGGERS.html"
-PERIODOS     = [7, 30, 60]
+PERIODOS     = [7, 30, 60, 90]
 PERIODO_PAD  = 30
 PENDING_AGENT_LABEL = "AGENTE PENDENTE (SEM DADOS)"
 TABLE_MAX_ROWS = 500
@@ -392,7 +392,7 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
         {str(k): {t: v for t, v in tv.items()} for k, tv in periods_data.items()},
         ensure_ascii=False, default=str,
     )
-    btn_labels = {7: "Ultimos 7 dias", 30: "Ultimos 30 dias", 60: "Ultimos 60 dias"}
+    btn_labels = {7: "Ultimos 7 dias", 30: "Ultimos 30 dias", 60: "Ultimos 60 dias", 90: "Ultimos 90 dias"}
     btns_html = "".join(
         f'<button class="period-btn{"  active" if d == PERIODO_PAD else ""}" '
         f'id="btn-{d}" onclick="switchPeriod({d})">{btn_labels[d]}</button>'
