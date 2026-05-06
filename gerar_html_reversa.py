@@ -11,7 +11,7 @@ import pandas as pd
 WORKSPACE    = Path(__file__).resolve().parents[1]
 SNAPSHOT_DIR = WORKSPACE / "snapshot_reversa"
 OUTPUT_FILE  = Path(__file__).resolve().parent / "REVERSA_DATALOGGERS.html"
-PERIODOS     = [7, 30, 60, 90]
+PERIODOS     = [7, 30, 60, 90, 180]
 PERIODO_PAD  = 30
 PENDING_AGENT_LABEL = "AGENTE PENDENTE (SEM DADOS)"
 TABLE_MAX_ROWS = 500
@@ -392,7 +392,13 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
         {str(k): {t: v for t, v in tv.items()} for k, tv in periods_data.items()},
         ensure_ascii=False, default=str,
     )
-    btn_labels = {7: "Ultimos 7 dias", 30: "Ultimos 30 dias", 60: "Ultimos 60 dias", 90: "Ultimos 90 dias"}
+    btn_labels = {
+        7: "Ultimos 7 dias",
+        30: "Ultimos 30 dias",
+        60: "Ultimos 60 dias",
+        90: "Ultimos 90 dias",
+        180: "Ultimos 180 dias",
+    }
     btns_html = "".join(
         f'<button class="period-btn{"  active" if d == PERIODO_PAD else ""}" '
         f'id="btn-{d}" onclick="switchPeriod({d})">{btn_labels[d]}</button>'
@@ -913,21 +919,32 @@ renderAll(DEFAULT_PERIOD, "");
 
 def main():
     print("[reversa] Carregando snapshots...")
-    base_loggers       = pd.read_pickle(SNAPSHOT_DIR / "base_loggers.pkl")
-    base_agentes       = pd.read_pickle(SNAPSHOT_DIR / "base_agentes.pkl")
-    recebimento        = pd.read_pickle(SNAPSHOT_DIR / "recebimento.pkl")
-    base_destinatarios = pd.read_pickle(SNAPSHOT_DIR / "base_destinatarios.pkl")
-
     max_days = max(PERIODOS)
-    base_loggers, base_agentes, recebimento, base_destinatarios = _prefilter(
-        base_loggers, base_agentes, recebimento, base_destinatarios, max_days
-    )
-    print(f"[reversa] Pos-filtro ({max_days}d): loggers={len(base_loggers)} agentes={len(base_agentes)} receb={len(recebimento)}")
+    try:
+        base_loggers       = pd.read_pickle(SNAPSHOT_DIR / "base_loggers.pkl")
+        base_agentes       = pd.read_pickle(SNAPSHOT_DIR / "base_agentes.pkl")
+        recebimento        = pd.read_pickle(SNAPSHOT_DIR / "recebimento.pkl")
+        base_destinatarios = pd.read_pickle(SNAPSHOT_DIR / "base_destinatarios.pkl")
 
-    model_full = build_model(base_loggers, base_agentes, recebimento, base_destinatarios)
-    cutoff_max = pd.Timestamp.now() - pd.Timedelta(days=max_days)
-    model_full = model_full[model_full["_data_entrega_dt"] >= cutoff_max].copy()
-    print(f"[reversa] Modelo completo: {len(model_full)} registros")
+        base_loggers, base_agentes, recebimento, base_destinatarios = _prefilter(
+            base_loggers, base_agentes, recebimento, base_destinatarios, max_days
+        )
+        print(f"[reversa] Pos-filtro ({max_days}d): loggers={len(base_loggers)} agentes={len(base_agentes)} receb={len(recebimento)}")
+
+        model_full = build_model(base_loggers, base_agentes, recebimento, base_destinatarios)
+        cutoff_max = pd.Timestamp.now() - pd.Timedelta(days=max_days)
+        model_full = model_full[model_full["_data_entrega_dt"] >= cutoff_max].copy()
+        print(f"[reversa] Modelo completo: {len(model_full)} registros")
+    except MemoryError:
+        print("[reversa] Memoria insuficiente ao carregar os snapshots brutos.")
+        print("[reversa] Usando modelo_final.pkl pronto para gerar o HTML.")
+        model_full = pd.read_pickle(SNAPSHOT_DIR / "modelo_final.pkl")
+        if "MOTORISTA" not in model_full.columns:
+            model_full["MOTORISTA"] = ""
+        if "_data_entrega_dt" not in model_full.columns:
+            model_full["_data_entrega_dt"] = pd.to_datetime(model_full.get("Data de Entrega"), errors="coerce")
+        model_full = model_full.copy()
+        print(f"[reversa] Modelo pronto: {len(model_full)} registros")
 
     gerado = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
