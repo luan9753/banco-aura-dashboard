@@ -82,6 +82,9 @@ def resolve_tipo_datalogger(df: pd.DataFrame, logger_col: str, code_col: str = "
 def build_model(base_loggers, base_agentes, recebimento, base_destinatarios) -> pd.DataFrame:
     for col in ["nr_pedido", "cd_referencia"]:
         base_loggers[col] = normalize_key(base_loggers[col])
+    base_loggers = base_loggers[
+        base_loggers["nr_pedido"].ne("") & base_loggers["cd_referencia"].ne("")
+    ].copy()
     base_agentes["PEDIDO"]       = normalize_key(base_agentes["PEDIDO"])
     base_destinatarios["PEDIDO"] = normalize_key(base_destinatarios["PEDIDO"])
     recebimento["ds_tag"]        = normalize_key(recebimento["ds_tag"])
@@ -103,6 +106,7 @@ def build_model(base_loggers, base_agentes, recebimento, base_destinatarios) -> 
     base_loggers["dt_embalagem"] = pd.to_datetime(base_loggers["dt_embalagem"], errors="coerce")
     base_loggers["Tipo Datalogger"] = resolve_tipo_datalogger(base_loggers, logger_col="cd_referencia")
     base_agentes["DATA_ENTREGA"] = pd.to_datetime(base_agentes["DATA_ENTREGA"], errors="coerce")
+    base_agentes = base_agentes[base_agentes["DATA_ENTREGA"].notna()].copy()
     recebimento["dt_historico"]  = pd.to_datetime(recebimento["dt_historico"], errors="coerce")
 
     agentes_agg = base_agentes.groupby("PEDIDO", as_index=False).agg({
@@ -138,9 +142,8 @@ def build_model(base_loggers, base_agentes, recebimento, base_destinatarios) -> 
 
     df["Tipo Datalogger"] = df["Tipo Datalogger"].fillna("").astype(str).str.strip()
     df["_data_entrega_dt"] = pd.to_datetime(df["Data de Entrega"], errors="coerce")
-    if "dt_embalagem" in df.columns:
-        df["dt_embalagem"] = pd.to_datetime(df["dt_embalagem"], errors="coerce")
-        df["_data_entrega_dt"] = df["_data_entrega_dt"].fillna(df["dt_embalagem"])
+    df = df[df["Logger"].fillna("").astype(str).str.strip().ne("")].copy()
+    df = df[df["Data de Entrega"].notna()].copy()
 
     # Agente vazio → ENTREGA VTC se tem data de entrega
     df["Agente"] = df["Agente"].fillna("").astype(str).str.strip()
@@ -157,6 +160,9 @@ def _prefilter(base_loggers, base_agentes, recebimento, base_destinatarios, days
     bl = base_loggers.copy()
     bl["dt_embalagem"] = pd.to_datetime(bl["dt_embalagem"], errors="coerce")
     bl = bl[bl["dt_embalagem"] >= cutoff]
+    bl["nr_pedido"] = normalize_key(bl["nr_pedido"])
+    bl["cd_referencia"] = normalize_key(bl["cd_referencia"])
+    bl = bl[bl["nr_pedido"].ne("") & bl["cd_referencia"].ne("")].copy()
     if bl.empty:
         return bl, base_agentes.head(0), recebimento.head(0), base_destinatarios.head(0)
     pedidos_set = set(normalize_key(bl["nr_pedido"]).loc[lambda s: s != ""])
@@ -164,6 +170,9 @@ def _prefilter(base_loggers, base_agentes, recebimento, base_destinatarios, days
     ba = base_agentes.copy()
     ba["_k"] = normalize_key(ba["PEDIDO"])
     ba = ba[ba["_k"].isin(pedidos_set)].drop(columns=["_k"])
+    if "DATA_ENTREGA" in ba.columns:
+        ba["DATA_ENTREGA"] = pd.to_datetime(ba["DATA_ENTREGA"], errors="coerce")
+        ba = ba[ba["DATA_ENTREGA"].notna()].copy()
     bd = base_destinatarios.copy()
     bd["_k"] = normalize_key(bd["PEDIDO"])
     bd = bd[bd["_k"].isin(pedidos_set)].drop(columns=["_k"])
@@ -304,10 +313,14 @@ def _build_all_rows(df: pd.DataFrame) -> list[list[str]]:
         "Cidade Destino", "Destinatario", "Motorista", "_data_entrega_iso",
     ]
     tbl = df.copy()
-    tbl = tbl.sort_values("_data_entrega_dt", ascending=False)
-    tbl["Data de Entrega"] = pd.to_datetime(tbl["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
+    tbl["Logger"] = tbl["Logger"].fillna("").astype(str).str.strip()
+    tbl = tbl[tbl["Logger"] != ""].copy()
+    tbl["Data de Entrega"] = pd.to_datetime(tbl["Data de Entrega"], errors="coerce")
+    tbl = tbl[tbl["Data de Entrega"].notna()].copy()
+    tbl = tbl.sort_values("Data de Entrega", ascending=False)
+    tbl["_data_entrega_iso"] = tbl["Data de Entrega"].dt.strftime("%Y-%m-%dT%H:%M:%S").fillna("")
+    tbl["Data de Entrega"] = tbl["Data de Entrega"].dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
     tbl["Ultimo_Historico"] = pd.to_datetime(tbl["Ultimo_Historico"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
-    tbl["_data_entrega_iso"] = pd.to_datetime(tbl["_data_entrega_dt"], errors="coerce").dt.strftime("%Y-%m-%dT%H:%M:%S").fillna("")
     rows = tbl.reindex(columns=detail_cols).fillna("").values.tolist()
     return [[str(c) if c is not None else "" for c in row] for row in rows]
 
@@ -864,8 +877,9 @@ function renderAll(days, tipo){{
   cutoff.setHours(0, 0, 0, 0);
   cutoff.setDate(cutoff.getDate() - (days - 1));
   const rows = ALL_ROWS.filter(r => {{
-    const dt = parseIsoDate(r[12]) || parseBrDate(r[4]);
-    return dt && dt >= cutoff && dt <= today &&
+    const logger = String(r[1] ?? "").trim();
+    const dt = parseBrDate(r[4]);
+    return logger && dt && dt >= cutoff && dt <= today &&
       (!tipo || String(r[2] ?? "") === String(tipo)) &&
       (!_currentUf || normalizeUf(r[3]) === _currentUf) &&
       matchesAgente(r[6], _currentAgente);
