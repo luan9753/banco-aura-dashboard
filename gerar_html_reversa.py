@@ -14,7 +14,12 @@ OUTPUT_FILE  = Path(__file__).resolve().parent / "REVERSA_DATALOGGERS.html"
 PERIODOS     = [7, 30, 60, 90, 180, 365]
 PERIODO_PAD  = 30
 PENDING_AGENT_LABEL = "AGENTE PENDENTE (SEM DADOS)"
-TABLE_MAX_ROWS = 500
+TABLE_MAX_ROWS = 50
+TABLE_HEADERS = [
+    "Pedido", "Logger", "Tipo Datalogger", "UF", "Data de Entrega",
+    "Ultimo Historico", "Agente", "Status Retorno", "UF Destino",
+    "Cidade Destino", "Destinatario", "Motorista",
+]
 
 TIPO_DATALOGGER_BY_CODE = {
     1: "ARES", 2: "ARES COM SONDA", 3: "SHIELD", 4: "SENSOR WEB", 5: "SYOS",
@@ -258,10 +263,11 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
     tbl = tbl.sort_values("_data_entrega_dt", ascending=False)
     tbl["Data de Entrega"] = pd.to_datetime(tbl["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
     tbl["Ultimo_Historico"] = pd.to_datetime(tbl["Ultimo_Historico"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
-    all_rows = tbl.reindex(columns=detail_cols).fillna("").values.tolist()
+    tbl["_data_entrega_iso"] = pd.to_datetime(tbl["_data_entrega_dt"], errors="coerce").dt.strftime("%Y-%m-%dT%H:%M:%S").fillna("")
+    all_rows = tbl.reindex(columns=detail_cols + ["_data_entrega_iso"]).fillna("").values.tolist()
     all_rows = [[str(c) if c is not None else "" for c in row] for row in all_rows]
     table_rows = all_rows[:TABLE_MAX_ROWS]
-    csv_rows = all_rows if days < 365 else table_rows
+    csv_rows = table_rows
 
     return {
         "period_txt": period_txt,
@@ -289,6 +295,21 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
         },
         "csv_rows": csv_rows,
     }
+
+
+def _build_all_rows(df: pd.DataFrame) -> list[list[str]]:
+    detail_cols = [
+        "Pedido", "Logger", "Tipo Datalogger", "UF", "Data de Entrega",
+        "Ultimo_Historico", "Agente", "Status Retorno", "UF Destino",
+        "Cidade Destino", "Destinatario", "Motorista", "_data_entrega_iso",
+    ]
+    tbl = df.copy()
+    tbl = tbl.sort_values("_data_entrega_dt", ascending=False)
+    tbl["Data de Entrega"] = pd.to_datetime(tbl["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
+    tbl["Ultimo_Historico"] = pd.to_datetime(tbl["Ultimo_Historico"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
+    tbl["_data_entrega_iso"] = pd.to_datetime(tbl["_data_entrega_dt"], errors="coerce").dt.strftime("%Y-%m-%dT%H:%M:%S").fillna("")
+    rows = tbl.reindex(columns=detail_cols).fillna("").values.tolist()
+    return [[str(c) if c is not None else "" for c in row] for row in rows]
 
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
@@ -396,13 +417,10 @@ footer{margin-top:24px;font-size:.75rem;color:#556070;text-align:right;}
 
 # ── HTML template ─────────────────────────────────────────────────────────────
 
-def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
+def generate_html(all_rows: list[list[str]], tipos: list[str],
                   ufs: list[str], agentes: list[str], gerado: str, hist_last: str) -> str:
-    pad = periods_data[PERIODO_PAD][""]
-    periods_json = json.dumps(
-        {str(k): {t: v for t, v in tv.items()} for k, tv in periods_data.items()},
-        ensure_ascii=False, default=str,
-    )
+    all_rows_json = json.dumps(all_rows, ensure_ascii=False, default=str)
+    headers_json = json.dumps(TABLE_HEADERS, ensure_ascii=False)
     btn_labels = {
         7: "Ultimos 7 dias",
         30: "Ultimos 30 dias",
@@ -431,7 +449,7 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
         f'<option value="{escape(ag)}">{escape(ag)}</option>'
         for ag in agentes
     )
-    tbl_headers = "".join(f"<th>{h}</th>" for h in pad["table"]["headers"])
+    tbl_headers = "".join(f"<th>{h}</th>" for h in TABLE_HEADERS)
 
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
@@ -552,8 +570,10 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
 <footer>Gerado em {gerado} &nbsp;&middot;&nbsp; VTC LOG &mdash; BI Qualidade</footer>
 
 <script>
-const PERIODS_DATA = {periods_json};
+const ALL_ROWS = {all_rows_json};
+const TABLE_HEADERS = {headers_json};
 const DEFAULT_PERIOD = {PERIODO_PAD};
+const TABLE_MAX_ROWS = {TABLE_MAX_ROWS};
 const cfg = {{displayModeBar:false, responsive:true}};
 
 const LAYOUT_BASE = {{
@@ -640,8 +660,9 @@ function renderChart(id, traces, layout){{
 function buildTableRows(rows){{
   return rows.map(r => {{
     const statusIdx = 7;
-    const statusClass = (r[statusIdx] || "").includes("Retornado") ? "status-retornado" : "status-pendente";
-    const cells = r.map((c,i) =>
+    const visible = r.slice(0, TABLE_HEADERS.length);
+    const statusClass = (visible[statusIdx] || "").includes("Retornado") ? "status-retornado" : "status-pendente";
+    const cells = visible.map((c,i) =>
       i === statusIdx
         ? `<td class="${{statusClass}}">${{escapeHtml(c)}}</td>`
         : `<td title="${{escapeHtml(c)}}">${{escapeHtml(c)}}</td>`
@@ -652,7 +673,7 @@ function buildTableRows(rows){{
 
 function buildCsvHref(headers, rows){{
   const escape = v => '"' + String(v).replace(/"/g,'""') + '"';
-  const lines = [headers.map(escape).join(",")].concat(rows.map(r => r.map(escape).join(",")));
+  const lines = [headers.map(escape).join(",")].concat(rows.map(r => r.slice(0, headers.length).map(escape).join(",")));
   const blob = new Blob([lines.join("\\n")], {{type:"text/csv;charset=utf-8;"}});
   return URL.createObjectURL(blob);
 }}
@@ -681,6 +702,13 @@ function normalizeText(value){{
     .replace(/[\\u0300-\\u036f]/g, "")
     .trim()
     .toUpperCase();
+}}
+
+function parseIsoDate(value){{
+  const s = String(value ?? "").trim();
+  if (!s) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
 }}
 
 function matchesAgente(rowAgente, filtro){{
@@ -824,22 +852,26 @@ function computePeriodData(rows, days){{
       rec7: {{ x: rec7X, y: rec7Y }},
     }},
     table: {{
-      headers: ["Pedido", "Logger", "Tipo Datalogger", "UF", "Data de Entrega", "Ultimo Historico", "Agente", "Status Retorno", "UF Destino", "Cidade Destino", "Destinatario"],
-      rows: rows.slice(0, 500),
+      headers: TABLE_HEADERS,
+      rows: rows.slice(0, TABLE_MAX_ROWS),
     }},
     csv_rows: rows,
   }};
 }}
 
 function renderAll(days, tipo){{
-  const byTipo = PERIODS_DATA[String(days)] || PERIODS_DATA[String(DEFAULT_PERIOD)];
-  const d = byTipo[tipo !== undefined ? tipo : ""] || byTipo[""];
-  if (!d) return;
-
-  const rows = (d.csv_rows || []).filter(r =>
-    (!_currentUf || normalizeUf(r[3]) === _currentUf) &&
-    matchesAgente(r[6], _currentAgente)
-  );
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const cutoff = new Date(today);
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - (days - 1));
+  const rows = ALL_ROWS.filter(r => {{
+    const dt = parseIsoDate(r[12]) || parseBrDate(r[4]);
+    return dt && dt >= cutoff && dt <= today &&
+      (!tipo || String(r[2] ?? "") === String(tipo)) &&
+      (!_currentUf || normalizeUf(r[3]) === _currentUf) &&
+      matchesAgente(r[6], _currentAgente);
+  }});
   const computed = computePeriodData(rows, days);
 
   document.getElementById("meta-period").textContent     = computed.period_txt;
@@ -860,7 +892,7 @@ function renderAll(days, tipo){{
   renderChart("chart-rec7",  traceBarV(computed.charts.rec7, "#2f80d0"), layoutBarV(320));
 
   const tbody = document.getElementById("detail-tbody");
-  if (tbody) tbody.innerHTML = computed.table.rows.length ? buildTableRows(computed.table.rows) : '<tr><td colspan="11" style="padding:16px;text-align:center;color:#9fb0c8;">Sem dados no filtro selecionado</td></tr>';
+  if (tbody) tbody.innerHTML = computed.table.rows.length ? buildTableRows(computed.table.rows) : '<tr><td colspan="12" style="padding:16px;text-align:center;color:#9fb0c8;">Sem dados no filtro selecionado</td></tr>';
   const csvLink = document.getElementById("csv-download");
   if (csvLink) csvLink.href = buildCsvHref(computed.table.headers, rows);
 }}
@@ -1000,7 +1032,10 @@ def main():
         print(f"[reversa] Periodo {days}d: {n_all} registros | "
               + " | ".join(f"{t}:{len(df_p[df_p['Tipo Datalogger']==t])}" for t in tipos))
 
-    html = generate_html(periods_data, tipos, ufs, agentes, gerado, hist_last)
+    all_rows = _build_all_rows(model_full)
+    print(f"[reversa] Dataset unico para navegação: {len(all_rows)} registros")
+
+    html = generate_html(all_rows, tipos, ufs, agentes, gerado, hist_last)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
     print(f"[reversa] HTML salvo: {OUTPUT_FILE}")
 
