@@ -11,7 +11,7 @@ import pandas as pd
 WORKSPACE    = Path(__file__).resolve().parents[1]
 SNAPSHOT_DIR = WORKSPACE / "snapshot_reversa"
 OUTPUT_FILE  = Path(__file__).resolve().parent / "REVERSA_DATALOGGERS.html"
-PERIODOS     = [7, 30, 60, 90]
+PERIODOS     = [7, 30, 60, 90, 180]
 PERIODO_PAD  = 30
 PENDING_AGENT_LABEL = "AGENTE PENDENTE (SEM DADOS)"
 TABLE_MAX_ROWS = 500
@@ -167,6 +167,16 @@ def _prefilter(base_loggers, base_agentes, recebimento, base_destinatarios, days
     rc["dt_historico"] = pd.to_datetime(rc["dt_historico"], errors="coerce")
     rc = rc[(rc["_k"].isin(tags_set)) & (rc["dt_historico"] >= cutoff - pd.Timedelta(days=30))].drop(columns=["_k"])
     return bl, ba, rc, bd
+
+
+def _load_recebimento_snapshot() -> pd.DataFrame:
+    resumo_path = SNAPSHOT_DIR / "recebimento_resumo.pkl"
+    if resumo_path.exists():
+        recebimento = pd.read_pickle(resumo_path)
+        if "Ultimo_Historico" in recebimento.columns and "dt_historico" not in recebimento.columns:
+            recebimento = recebimento.rename(columns={"Ultimo_Historico": "dt_historico"})
+        return recebimento
+    return pd.read_pickle(SNAPSHOT_DIR / "recebimento.pkl")
 
 
 # ── per-period computation ─────────────────────────────────────────────────────
@@ -397,6 +407,7 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
         30: "Ultimos 30 dias",
         60: "Ultimos 60 dias",
         90: "Ultimos 90 dias",
+        180: "Ultimos 180 dias",
     }
     btns_html = "".join(
         f'<button class="period-btn{"  active" if d == PERIODO_PAD else ""}" '
@@ -922,7 +933,7 @@ def main():
     try:
         base_loggers       = pd.read_pickle(SNAPSHOT_DIR / "base_loggers.pkl")
         base_agentes       = pd.read_pickle(SNAPSHOT_DIR / "base_agentes.pkl")
-        recebimento        = pd.read_pickle(SNAPSHOT_DIR / "recebimento.pkl")
+        recebimento        = _load_recebimento_snapshot()
         base_destinatarios = pd.read_pickle(SNAPSHOT_DIR / "base_destinatarios.pkl")
 
         base_loggers, base_agentes, recebimento, base_destinatarios = _prefilter(
