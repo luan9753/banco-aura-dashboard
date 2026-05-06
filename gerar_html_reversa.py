@@ -498,19 +498,19 @@ def generate_html(all_rows: list[list[str]], tipos: list[str],
 </div>
 
 <div class="meta-strip">
-  <strong>Periodo aplicado:</strong> <span id="meta-period">{pad["period_txt"]}</span><br>
+  <strong>Periodo aplicado:</strong> <span id="meta-period">--</span><br>
   <strong>Agente aplicado:</strong> <span id="meta-agente">Todos os agentes</span> &nbsp;|&nbsp;
   <strong>UF aplicada:</strong> <span id="meta-uf">Todas as UFs</span> &nbsp;|&nbsp;
   <strong>Ultima atualizacao do historico:</strong> {hist_last} &nbsp;|&nbsp; <strong>Ultima atualizacao da tela:</strong> {gerado}
 </div>
 
 <div class="kpi-grid">
-  <div class="kpi-card"><div class="kpi-title">Pedidos Entregues</div><div class="kpi-value" id="kpi-pedidos">{pad["kpi"]["pedidos"]}</div></div>
-  <div class="kpi-card"><div class="kpi-title">Loggers Entregues</div><div class="kpi-value" id="kpi-loggers">{pad["kpi"]["loggers"]}</div></div>
-  <div class="kpi-card"><div class="kpi-title">Loggers Retornados</div><div class="kpi-value" id="kpi-retornados">{pad["kpi"]["retornados"]}</div></div>
-  <div class="kpi-card"><div class="kpi-title">Loggers Pendentes</div><div class="kpi-value" id="kpi-pendentes">{pad["kpi"]["pendentes"]}</div></div>
-  <div class="kpi-card"><div class="kpi-title">Taxa de Retorno</div><div class="kpi-value" id="kpi-taxa-ret">{pad["kpi"]["taxa_ret"]}</div></div>
-  <div class="kpi-card"><div class="kpi-title">Taxa de Pendencia</div><div class="kpi-value" id="kpi-taxa-pend">{pad["kpi"]["taxa_pend"]}</div></div>
+  <div class="kpi-card"><div class="kpi-title">Pedidos Entregues</div><div class="kpi-value" id="kpi-pedidos">--</div></div>
+  <div class="kpi-card"><div class="kpi-title">Loggers Entregues</div><div class="kpi-value" id="kpi-loggers">--</div></div>
+  <div class="kpi-card"><div class="kpi-title">Loggers Retornados</div><div class="kpi-value" id="kpi-retornados">--</div></div>
+  <div class="kpi-card"><div class="kpi-title">Loggers Pendentes</div><div class="kpi-value" id="kpi-pendentes">--</div></div>
+  <div class="kpi-card"><div class="kpi-title">Taxa de Retorno</div><div class="kpi-value" id="kpi-taxa-ret">--</div></div>
+  <div class="kpi-card"><div class="kpi-title">Taxa de Pendencia</div><div class="kpi-value" id="kpi-taxa-pend">--</div></div>
 </div>
 
 <div class="tabs-bar">
