@@ -11,7 +11,7 @@ import pandas as pd
 WORKSPACE    = Path(__file__).resolve().parents[1]
 SNAPSHOT_DIR = WORKSPACE / "snapshot_reversa"
 OUTPUT_FILE  = Path(__file__).resolve().parent / "REVERSA_DATALOGGERS.html"
-PERIODOS     = [7, 30, 60, 90, 180]
+PERIODOS     = [7, 30, 60, 90, 180, 365]
 PERIODO_PAD  = 30
 PENDING_AGENT_LABEL = "AGENTE PENDENTE (SEM DADOS)"
 TABLE_MAX_ROWS = 500
@@ -261,6 +261,7 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
     all_rows = tbl.reindex(columns=detail_cols).fillna("").values.tolist()
     all_rows = [[str(c) if c is not None else "" for c in row] for row in all_rows]
     table_rows = all_rows[:TABLE_MAX_ROWS]
+    csv_rows = all_rows if days < 365 else table_rows
 
     return {
         "period_txt": period_txt,
@@ -286,7 +287,7 @@ def _compute_period_data(df: pd.DataFrame, days: int) -> dict:
                         "Cidade Destino", "Destinatario", "Motorista"],
             "rows": table_rows,
         },
-        "csv_rows": all_rows,
+        "csv_rows": csv_rows,
     }
 
 
@@ -408,6 +409,7 @@ def generate_html(periods_data: dict[int, dict[str, dict]], tipos: list[str],
         60: "Ultimos 60 dias",
         90: "Ultimos 90 dias",
         180: "Ultimos 180 dias",
+        365: "Ultimos 365 dias",
     }
     btns_html = "".join(
         f'<button class="period-btn{"  active" if d == PERIODO_PAD else ""}" '
