@@ -9,6 +9,7 @@ exit /b 0
 
 set "EXIT_CODE=0"
 set "HAS_CHANGES=0"
+set "HAS_STASH=0"
 set "PAGE_URL=https://luan9753.github.io/banco-aura-dashboard/ESTOQUE_DATALOGGERS.html"
 
 cd /d "%~dp0"
@@ -57,9 +58,27 @@ echo [INFO] Push nao necessario (sem alteracoes novas).
 goto :AFTER_PUSH
 
 :DO_PUSH
-git push origin main
+git status --porcelain | findstr /r "." >nul
+if not errorlevel 1 (
+    echo [INFO] Salvando alteracoes locais temporariamente...
+    git stash push --include-untracked -m "auto-publish ESTOQUE_DATALOGGERS" >nul
+    if errorlevel 1 set "ERRMSG=Falha ao criar stash local." & goto :FAIL
+    set "HAS_STASH=1"
+)
+
+echo [INFO] Sincronizando com origin/main antes do push...
+git pull --rebase origin main
+if errorlevel 1 set "ERRMSG=Falha ao sincronizar com o remoto (passo 3)." & goto :FAIL
+
+git push origin HEAD:main
 if errorlevel 1 set "ERRMSG=Falha no git push (passo 3)." & goto :FAIL
 echo [OK] Push concluido com sucesso.
+
+if "%HAS_STASH%"=="1" (
+    echo [INFO] Restaurando alteracoes locais...
+    git stash pop --index >nul
+    if errorlevel 1 echo [WARN] Nao foi possivel restaurar o stash local automaticamente.
+)
 
 :AFTER_PUSH
 echo.
@@ -71,6 +90,11 @@ goto :END
 :FAIL
 set "EXIT_CODE=1"
 echo.
+if "%HAS_STASH%"=="1" (
+    echo [INFO] Restaurando alteracoes locais...
+    git stash pop --index >nul
+    if errorlevel 1 echo [WARN] Nao foi possivel restaurar o stash local automaticamente.
+)
 echo [ERRO] %ERRMSG%
 echo Fim com erro: %date% %time%
 
