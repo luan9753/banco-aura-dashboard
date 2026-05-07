@@ -156,14 +156,22 @@ def make_bar_chart(
         )
         fig.update_layout(template="plotly_dark", paper_bgcolor="#0b1020", plot_bgcolor="#0b1020")
         return fig
-    fig = px.bar(df, x=x, y=y, title=title, color_discrete_sequence=[color], orientation=orientation)
+    chart_df = df.copy()
+    if orientation == "h" and y in chart_df.columns:
+        chart_df = chart_df.sort_values(y, ascending=True)
+    fig = px.bar(chart_df, x=x, y=y, title=title, color_discrete_sequence=[color], orientation=orientation)
     text_template = "%{x}" if orientation == "h" else "%{y}"
-    fig.update_traces(
+    trace_kwargs = dict(
         cliponaxis=False,
         texttemplate=text_template,
         textposition="outside",
         marker_line_width=0,
     )
+    if orientation == "h":
+        trace_kwargs["textposition"] = "inside"
+        trace_kwargs["insidetextanchor"] = "middle"
+        trace_kwargs["textfont"] = dict(color="#ffffff")
+    fig.update_traces(**trace_kwargs)
     fig.update_layout(
         template="plotly_dark",
         paper_bgcolor="#0b1020",
