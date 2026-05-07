@@ -1,0 +1,1552 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Controle de Entregas - Loggers</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg: #08111f;
+      --panel: #111a2c;
+      --panel-2: #0d1525;
+      --line: #22314b;
+      --text: #e7eefc;
+      --muted: #94a3b8;
+      --accent: #ffb347;
+      --accent-2: #7aa2ff;
+      --good: #2dd4bf;
+      --warn: #f59e0b;
+      --danger: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(122,162,255,0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(255,179,71,0.12), transparent 24%),
+        linear-gradient(180deg, #09111f 0%, #060b15 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1580px; margin: 0 auto; padding: 24px 18px 40px; }
+    .hero {
+      background: linear-gradient(135deg, rgba(17,26,44,0.96), rgba(10,16,29,0.98));
+      border: 1px solid rgba(122,162,255,0.16);
+      border-radius: 20px;
+      padding: 24px 24px 20px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    h1 {
+      margin: 10px 0 8px;
+      font-size: 30px;
+      line-height: 1.1;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 1120px;
+    }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .pill {
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font-size: 13px;
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0 18px;
+    }
+    .kpi {
+      background: linear-gradient(180deg, rgba(17,26,44,0.98), rgba(12,19,34,0.98));
+      border: 1px solid rgba(122,162,255,0.16);
+      border-radius: 18px;
+      padding: 16px 16px 14px;
+      min-height: 108px;
+    }
+    .kpi .label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+    .kpi .value {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .kpi .foot {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .grid3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 14px 0 18px;
+    }
+    .panel {
+      background: rgba(17,26,44,0.96);
+      border: 1px solid rgba(122,162,255,0.16);
+      border-radius: 18px;
+      padding: 14px 14px 10px;
+      overflow: hidden;
+    }
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 2px 0 12px;
+    }
+    .section {
+      margin-top: 18px;
+      background: rgba(17,26,44,0.94);
+      border: 1px solid rgba(122,162,255,0.16);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .section h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .section p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(122,162,255,0.24);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      text-decoration: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.08); }
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,0.16);
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(10,16,29,0.92);
+      min-width: 1050px;
+    }
+    .data-table th,
+    .data-table td {
+      padding: 11px 10px;
+      border-bottom: 1px solid rgba(148,163,184,0.12);
+      border-right: 1px solid rgba(148,163,184,0.10);
+      font-size: 12px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .data-table th {
+      position: sticky;
+      top: 0;
+      background: rgba(28,35,51,0.98);
+      color: #dbeafe;
+      z-index: 1;
+    }
+    .data-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+    .data-table tbody tr:hover { background: rgba(122,162,255,0.07); }
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .empty-box {
+      padding: 18px;
+      color: var(--muted);
+      background: rgba(10,16,29,0.92);
+      border-radius: 14px;
+      border: 1px dashed rgba(148,163,184,0.24);
+    }
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    @media (max-width: 1280px) {
+      .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid3, .two-col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .wrap { padding: 14px 10px 24px; }
+      h1 { font-size: 24px; }
+      .kpis { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="eyebrow">Controle operacional</div>
+      <h1>Controle de Entregas dos Loggers</h1>
+      <div class="sub">
+        Visao separada para acompanhar apenas os loggers entregues nos ultimos 20 dias.
+        A pagina destaca o que foi entregue hoje, ontem e no periodo completo, com tabela limitada na visualizacao
+        e exportacao completa em CSV.
+      </div>
+      <div class="pill-row">
+        <div class="pill"><strong>Janela:</strong> ultimos 20 dias</div>
+        <div class="pill"><strong>Ultima entrega:</strong> 06/05/2026 18:57:00</div>
+        <div class="pill"><strong>Gerado em:</strong> 06/05/2026 21:15:06</div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="label">Loggers no periodo</div><div class="value">4.502</div><div class="foot">Entregas com data valida</div></div>
+      <div class="kpi"><div class="label">Entregues hoje</div><div class="value">271</div><div class="foot">Data de entrega igual a hoje</div></div>
+      <div class="kpi"><div class="label">Entregues ontem</div><div class="value">474</div><div class="foot">Referencia para o turno anterior</div></div>
+      <div class="kpi"><div class="label">Pedidos unicos</div><div class="value">747</div><div class="foot">Pedidos com logger entregue</div></div>
+      <div class="kpi"><div class="label">Agentes unicos</div><div class="value">42</div><div class="foot">Responsaveis da entrega</div></div>
+      <div class="kpi"><div class="label">Retornados no periodo</div><div class="value">1.649</div><div class="foot">Status Retorno = Retornado</div></div>
+    </div>
+
+    <div class="grid3">
+      <div class="panel">
+        <div class="panel-title">Entregas por dia</div>
+        <div>                            <div id="87f3a380-08bb-4d03-a191-73ff3c40f309" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("87f3a380-08bb-4d03-a191-73ff3c40f309")) {                    Plotly.newPlot(                        "87f3a380-08bb-4d03-a191-73ff3c40f309",                        [{"hovertemplate":"Dia=%{x}\u003cbr\u003eLoggers=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"","line":{"color":"#ffb347","dash":"solid","width":3},"marker":{"symbol":"circle","size":8},"mode":"lines+markers","name":"","orientation":"v","showlegend":false,"x":["16\u002f04","17\u002f04","18\u002f04","19\u002f04","20\u002f04","21\u002f04","22\u002f04","23\u002f04","24\u002f04","25\u002f04","26\u002f04","27\u002f04","28\u002f04","29\u002f04","30\u002f04","01\u002f05","02\u002f05","03\u002f05","04\u002f05","05\u002f05","06\u002f05"],"xaxis":"x","y":{"dtype":"i2","bdata":"RQFYASgAAAAaAAAA+gIOAYMBAAAAAKwCngFgAiACYwACAAEAgwHaAQ8B"},"yaxis":"y","type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Dia"},"gridcolor":"#25304a"},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Loggers"},"gridcolor":"#25304a"},"legend":{"tracegroupgap":0},"title":{"text":"Entregas por dia","font":{"size":16},"x":0.02},"margin":{"l":20,"r":20,"t":60,"b":40},"font":{"color":"#e5eefc"},"paper_bgcolor":"#0b1020","plot_bgcolor":"#0b1020","height":360},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Top agentes</div>
+        <div>                            <div id="cd46a366-7d8a-4166-9470-12aeceee9f79" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("cd46a366-7d8a-4166-9470-12aeceee9f79")) {                    Plotly.newPlot(                        "cd46a366-7d8a-4166-9470-12aeceee9f79",                        [{"hovertemplate":"Agente=%{x}\u003cbr\u003eLoggers=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"","marker":{"color":"#7aa2ff","pattern":{"shape":""}},"name":"","orientation":"v","showlegend":false,"textposition":"outside","x":["VTCLOG - GRU","VTCLOG CNF - CONTAGEM","VTCLOG - REC","SLZ - REIS CAVALCANTE EXPRESSO","FOR - NT TRANSPORTE LTDA","SSA - BELTRANS CARGAS","SSA - LUTY LOG","GYN - RBR EXPERIENCIA EM TRANSPORTES","POA - GMB TRANSPORTES E LOGISTICA ME","MAO- GR TRANSPORTES E LOGISTICA MULTIMODAL"],"xaxis":"x","y":{"dtype":"i2","bdata":"BAPkAUYBQwFCARIBEAEQAQAB\u002fAA="},"yaxis":"y","type":"bar","cliponaxis":false,"texttemplate":"%{y}"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Agente"},"gridcolor":"#25304a"},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Loggers"},"gridcolor":"#25304a"},"legend":{"tracegroupgap":0},"title":{"text":"Entregas por agente","font":{"size":16},"x":0.02},"barmode":"relative","margin":{"l":20,"r":20,"t":60,"b":40},"font":{"color":"#e5eefc"},"paper_bgcolor":"#0b1020","plot_bgcolor":"#0b1020","height":360},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Top UFs</div>
+        <div>                            <div id="a0705325-5135-4947-a73f-c13cc4ced461" class="plotly-graph-div" style="height:360px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("a0705325-5135-4947-a73f-c13cc4ced461")) {                    Plotly.newPlot(                        "a0705325-5135-4947-a73f-c13cc4ced461",                        [{"hovertemplate":"UF=%{x}\u003cbr\u003eLoggers=%{y}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"","marker":{"color":"#ffb347","pattern":{"shape":""}},"name":"","orientation":"v","showlegend":false,"textposition":"outside","x":["MG","BA","RS","PE","MA","CE","SC","GO","AM","SE"],"xaxis":"x","y":{"dtype":"i2","bdata":"\u002fgIRAsoBRgFEAUMBHQEVAfwA2QA="},"yaxis":"y","type":"bar","cliponaxis":false,"texttemplate":"%{y}"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"UF"},"gridcolor":"#25304a"},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Loggers"},"gridcolor":"#25304a"},"legend":{"tracegroupgap":0},"title":{"text":"Entregas por UF","font":{"size":16},"x":0.02},"barmode":"relative","margin":{"l":20,"r":20,"t":60,"b":40},"font":{"color":"#e5eefc"},"paper_bgcolor":"#0b1020","plot_bgcolor":"#0b1020","height":360},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <h2>Entregas de hoje</h2>
+          <p>25 registro(s) encontrados para a data atual.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Pedido</th>
+      <th>Logger</th>
+      <th>Tipo Datalogger</th>
+      <th>Agente</th>
+      <th>UF</th>
+      <th>Data de Entrega</th>
+      <th>Status Retorno</th>
+      <th>UF Destino</th>
+      <th>Cidade Destino</th>
+      <th>Destinatario</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260529</td>
+      <td>TA0846</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260529</td>
+      <td>TA0846</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>552888</td>
+      <td>S1638</td>
+      <td>SYOS</td>
+      <td>POA - GMB TRANSPORTES E LOGISTICA ME</td>
+      <td>RS</td>
+      <td>06/05/2026 16:27:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RS</td>
+      <td>Porto Alegre</td>
+      <td>HOSPITAL NOSSA SENHORA DA CONCEIÇÃO</td>
+    </tr>
+    <tr>
+      <td>552622</td>
+      <td>A4117</td>
+      <td>ARES</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:15:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551357</td>
+      <td>A5401</td>
+      <td>ARES</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:12:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1085</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1112</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1129</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1700</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1700</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1790</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551385</td>
+      <td>S1204</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:06:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>552895</td>
+      <td>S0746</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 16:00:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>HOSPITAL ESTADUAL AZEVEDO LIMA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A2179</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A3802</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A4732</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A5656</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+  </tbody>
+</table></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <h2>Entregas de ontem</h2>
+          <p>25 registro(s) encontrados para o dia anterior.</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Pedido</th>
+      <th>Logger</th>
+      <th>Tipo Datalogger</th>
+      <th>Agente</th>
+      <th>UF</th>
+      <th>Data de Entrega</th>
+      <th>Status Retorno</th>
+      <th>UF Destino</th>
+      <th>Cidade Destino</th>
+      <th>Destinatario</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>551377</td>
+      <td>S1004</td>
+      <td>SYOS</td>
+      <td>FOR - NT TRANSPORTE LTDA</td>
+      <td>CE</td>
+      <td>05/05/2026 19:30:00</td>
+      <td>Pendente de Retorno</td>
+      <td>CE</td>
+      <td>Maracanau</td>
+      <td>LABORATÓRIO REGIONAL DE SAUDE PÚBLICA DE JUAZEIRO</td>
+    </tr>
+    <tr>
+      <td>551377</td>
+      <td>S1577</td>
+      <td>SYOS</td>
+      <td>FOR - NT TRANSPORTE LTDA</td>
+      <td>CE</td>
+      <td>05/05/2026 19:30:00</td>
+      <td>Pendente de Retorno</td>
+      <td>CE</td>
+      <td>Maracanau</td>
+      <td>LABORATÓRIO REGIONAL DE SAUDE PÚBLICA DE JUAZEIRO</td>
+    </tr>
+    <tr>
+      <td>20260527</td>
+      <td>A7052</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:40:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260527</td>
+      <td>A7052</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:40:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260526</td>
+      <td>A8352</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:40:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260526</td>
+      <td>A8352</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:40:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260526</td>
+      <td>A8352</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:40:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260526</td>
+      <td>A8352</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:40:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260526</td>
+      <td>A8352</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:40:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A0791</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A2650</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A3457</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A6222</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A6405</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A7101</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A7336</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A7658</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A7878</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A8034</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A8117</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A8498</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A8548</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>A8880</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>S0676</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+    <tr>
+      <td>552132</td>
+      <td>S1110</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>05/05/2026 18:20:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - RIO DE JAN</td>
+    </tr>
+  </tbody>
+</table></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <h2>Detalhe do periodo</h2>
+          <p>50 linhas exibidas na tabela; o CSV completo sai em <code>CONTROLE_ENTREGAS_20D.csv</code>.</p>
+        </div>
+        <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
+      </div>
+      <div class="table-wrap"><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Pedido</th>
+      <th>Logger</th>
+      <th>Tipo Datalogger</th>
+      <th>Agente</th>
+      <th>UF</th>
+      <th>Data de Entrega</th>
+      <th>Status Retorno</th>
+      <th>UF Destino</th>
+      <th>Cidade Destino</th>
+      <th>Destinatario</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260532</td>
+      <td>S0625</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260531</td>
+      <td>S0690</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260529</td>
+      <td>TA0846</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>20260529</td>
+      <td>TA0846</td>
+      <td>ARES</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 18:57:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>FUNDACAO OSWALDO CRUZ</td>
+    </tr>
+    <tr>
+      <td>552888</td>
+      <td>S1638</td>
+      <td>SYOS</td>
+      <td>POA - GMB TRANSPORTES E LOGISTICA ME</td>
+      <td>RS</td>
+      <td>06/05/2026 16:27:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RS</td>
+      <td>Porto Alegre</td>
+      <td>HOSPITAL NOSSA SENHORA DA CONCEIÇÃO</td>
+    </tr>
+    <tr>
+      <td>552622</td>
+      <td>A4117</td>
+      <td>ARES</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:15:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551357</td>
+      <td>A5401</td>
+      <td>ARES</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:12:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1085</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1112</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1129</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1700</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1700</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551635</td>
+      <td>S1790</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:09:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>551385</td>
+      <td>S1204</td>
+      <td>SYOS</td>
+      <td>VTCLOG - REC</td>
+      <td>PE</td>
+      <td>06/05/2026 16:06:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PE</td>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>ALMOXARIFADO ESTADUAL DE MEDICAMENTOS - PERNAMBUCO</td>
+    </tr>
+    <tr>
+      <td>552895</td>
+      <td>S0746</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 16:00:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>Niteroi</td>
+      <td>HOSPITAL ESTADUAL AZEVEDO LIMA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A2179</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A3802</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A4732</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A5656</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A6374</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A7696</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A7875</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552752</td>
+      <td>A8803</td>
+      <td>ARES</td>
+      <td>FLN - TGEX TRANSPORTES E LOCACAO DE VEIC</td>
+      <td>SC</td>
+      <td>06/05/2026 15:55:00</td>
+      <td>Pendente de Retorno</td>
+      <td>SC</td>
+      <td>Sao Jose</td>
+      <td>SECRETARIA ESTADUAL DE SAUDE DE SANTA CATARINA</td>
+    </tr>
+    <tr>
+      <td>552885</td>
+      <td>S1403</td>
+      <td>SYOS</td>
+      <td>POA - GMB TRANSPORTES E LOGISTICA ME</td>
+      <td>RS</td>
+      <td>06/05/2026 15:53:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RS</td>
+      <td>Porto Alegre</td>
+      <td>HOSPITAL DE CLINICAS DE PORTO ALEGRE</td>
+    </tr>
+    <tr>
+      <td>552885</td>
+      <td>S1694</td>
+      <td>SYOS</td>
+      <td>POA - GMB TRANSPORTES E LOGISTICA ME</td>
+      <td>RS</td>
+      <td>06/05/2026 15:53:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RS</td>
+      <td>Porto Alegre</td>
+      <td>HOSPITAL DE CLINICAS DE PORTO ALEGRE</td>
+    </tr>
+    <tr>
+      <td>552885</td>
+      <td>S1694</td>
+      <td>SYOS</td>
+      <td>POA - GMB TRANSPORTES E LOGISTICA ME</td>
+      <td>RS</td>
+      <td>06/05/2026 15:53:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RS</td>
+      <td>Porto Alegre</td>
+      <td>HOSPITAL DE CLINICAS DE PORTO ALEGRE</td>
+    </tr>
+    <tr>
+      <td>551481</td>
+      <td>S0661</td>
+      <td>SYOS</td>
+      <td>VTCLOG - BSB</td>
+      <td>DF</td>
+      <td>06/05/2026 15:48:00</td>
+      <td>Pendente de Retorno</td>
+      <td>DF</td>
+      <td>BRASILIA</td>
+      <td>GERÊNCIA DE VIGILÂNCIA DE ZOONOSES</td>
+    </tr>
+    <tr>
+      <td>551623</td>
+      <td>S0686</td>
+      <td>SYOS</td>
+      <td>VTCLOG - BSB</td>
+      <td>DF</td>
+      <td>06/05/2026 15:45:00</td>
+      <td>Pendente de Retorno</td>
+      <td>DF</td>
+      <td>BRASILIA</td>
+      <td>GERÊNCIA DE VIGILÂNCIA DE ZOONOSES</td>
+    </tr>
+    <tr>
+      <td>552918</td>
+      <td>A7107</td>
+      <td>ARES</td>
+      <td>PMW - MK BILLIG TRANSPORTES E LOGISTICA EIRELLI</td>
+      <td>TO</td>
+      <td>06/05/2026 15:30:00</td>
+      <td>Pendente de Retorno</td>
+      <td>TO</td>
+      <td>Palmas</td>
+      <td>LABORATÓRIO DE SAÚDE PÚBLICA DE ARAGUAÍNA (LSPA)</td>
+    </tr>
+    <tr>
+      <td>552918</td>
+      <td>A9644</td>
+      <td>ARES</td>
+      <td>PMW - MK BILLIG TRANSPORTES E LOGISTICA EIRELLI</td>
+      <td>TO</td>
+      <td>06/05/2026 15:30:00</td>
+      <td>Pendente de Retorno</td>
+      <td>TO</td>
+      <td>Palmas</td>
+      <td>LABORATÓRIO DE SAÚDE PÚBLICA DE ARAGUAÍNA (LSPA)</td>
+    </tr>
+    <tr>
+      <td>552904</td>
+      <td>S0583</td>
+      <td>SYOS</td>
+      <td>VTCLOG - BSB</td>
+      <td>DF</td>
+      <td>06/05/2026 15:19:00</td>
+      <td>Pendente de Retorno</td>
+      <td>DF</td>
+      <td>BRASILIA</td>
+      <td>HOSPITAL DE BASE DO DISTRITO FEDERAL (IGESDF)</td>
+    </tr>
+    <tr>
+      <td>551890</td>
+      <td>A1927</td>
+      <td>ARES</td>
+      <td>LDB - ND CARGAS LTDA</td>
+      <td>PR</td>
+      <td>06/05/2026 15:15:00</td>
+      <td>Pendente de Retorno</td>
+      <td>PR</td>
+      <td>Maringa</td>
+      <td>MARIA ELIDIA BARBOSA SEI</td>
+    </tr>
+    <tr>
+      <td>551384</td>
+      <td>A2187</td>
+      <td>ARES</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>MT</td>
+      <td>06/05/2026 15:15:00</td>
+      <td>Pendente de Retorno</td>
+      <td>MT</td>
+      <td>Cuiaba</td>
+      <td>SECRETARIA DE ESTADO DE SAUDE DE MA</td>
+    </tr>
+    <tr>
+      <td>551487</td>
+      <td>A1631</td>
+      <td>ARES</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>MG</td>
+      <td>06/05/2026 15:11:00</td>
+      <td>Pendente de Retorno</td>
+      <td>MG</td>
+      <td>Contagem</td>
+      <td>LABORATÓRIO CENTRAL SAÚDE PÚBLICA- LACEN/MG</td>
+    </tr>
+    <tr>
+      <td>551354</td>
+      <td>S0267</td>
+      <td>SYOS</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>MG</td>
+      <td>06/05/2026 15:11:00</td>
+      <td>Pendente de Retorno</td>
+      <td>MG</td>
+      <td>Contagem</td>
+      <td>LABORATÓRIO CENTRAL SAÚDE PÚBLICA- LACEN/MG</td>
+    </tr>
+    <tr>
+      <td>552861</td>
+      <td>A3175</td>
+      <td>ARES</td>
+      <td>CGR - LH TRANSPORTES</td>
+      <td>MS</td>
+      <td>06/05/2026 15:05:00</td>
+      <td>Pendente de Retorno</td>
+      <td>MS</td>
+      <td>Campo Grande</td>
+      <td>LAB. CENTRAL DE SAUDE PUBLICA MATO GROSSO DO SUL -</td>
+    </tr>
+    <tr>
+      <td>552861</td>
+      <td>A3175</td>
+      <td>ARES</td>
+      <td>CGR - LH TRANSPORTES</td>
+      <td>MS</td>
+      <td>06/05/2026 15:05:00</td>
+      <td>Pendente de Retorno</td>
+      <td>MS</td>
+      <td>Campo Grande</td>
+      <td>LAB. CENTRAL DE SAUDE PUBLICA MATO GROSSO DO SUL -</td>
+    </tr>
+    <tr>
+      <td>552861</td>
+      <td>A9187</td>
+      <td>ARES</td>
+      <td>CGR - LH TRANSPORTES</td>
+      <td>MS</td>
+      <td>06/05/2026 15:05:00</td>
+      <td>Pendente de Retorno</td>
+      <td>MS</td>
+      <td>Campo Grande</td>
+      <td>LAB. CENTRAL DE SAUDE PUBLICA MATO GROSSO DO SUL -</td>
+    </tr>
+    <tr>
+      <td>552861</td>
+      <td>TA0311</td>
+      <td>ARES</td>
+      <td>CGR - LH TRANSPORTES</td>
+      <td>MS</td>
+      <td>06/05/2026 15:05:00</td>
+      <td>Pendente de Retorno</td>
+      <td>MS</td>
+      <td>Campo Grande</td>
+      <td>LAB. CENTRAL DE SAUDE PUBLICA MATO GROSSO DO SUL -</td>
+    </tr>
+    <tr>
+      <td>552914</td>
+      <td>S1202</td>
+      <td>SYOS</td>
+      <td>SSA - LUTY LOG</td>
+      <td>BA</td>
+      <td>06/05/2026 14:35:00</td>
+      <td>Pendente de Retorno</td>
+      <td>BA</td>
+      <td>Salvador</td>
+      <td>FUNDACAO ABM</td>
+    </tr>
+    <tr>
+      <td>551614</td>
+      <td>S0929</td>
+      <td>SYOS</td>
+      <td>MCZ - MCZ EXPRESS SERVICE LTDA</td>
+      <td>AL</td>
+      <td>06/05/2026 14:30:00</td>
+      <td>Pendente de Retorno</td>
+      <td>AL</td>
+      <td>Maceio</td>
+      <td>SECRETARIA DE ESTADO DA SAUDE</td>
+    </tr>
+    <tr>
+      <td>552926</td>
+      <td>S1324</td>
+      <td>SYOS</td>
+      <td>VTCLOG RIO GALEAO</td>
+      <td>RJ</td>
+      <td>06/05/2026 14:30:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RJ</td>
+      <td>RIO DE JANEIRO</td>
+      <td>DANIEL DE OLIVEIRA PEREIRA</td>
+    </tr>
+    <tr>
+      <td>551360</td>
+      <td>S0826</td>
+      <td>SYOS</td>
+      <td>NAT - CSM CARGO</td>
+      <td>RN</td>
+      <td>06/05/2026 14:25:00</td>
+      <td>Pendente de Retorno</td>
+      <td>RN</td>
+      <td>Natal</td>
+      <td>LAB. CENTRAL DR ALMINO FERNANDES - LACEN/RN</td>
+    </tr>
+    <tr>
+      <td>553009</td>
+      <td>S1444</td>
+      <td>SYOS</td>
+      <td>MCP - A A CARVALHO ROCHA ME</td>
+      <td>AP</td>
+      <td>06/05/2026 14:25:00</td>
+      <td>Pendente de Retorno</td>
+      <td>AP</td>
+      <td>Macapa</td>
+      <td>LACEN/AP PROFESSOR REINALDO DAMASCENO</td>
+    </tr>
+  </tbody>
+</table></div>
+    </div>
+
+    <div class="footer">
+      Fonte: snapshot_reversa/modelo_final.pkl. O recorte considera apenas loggers com data de entrega valida e janela dos ultimos 20 dias.
+    </div>
+  </div>
+</body>
+</html>
