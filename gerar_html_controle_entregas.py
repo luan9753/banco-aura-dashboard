@@ -231,17 +231,20 @@ def make_rank_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str, he
         texttemplate="%{x}",
         textposition="outside",
         marker_line_width=0,
+        marker=dict(line=dict(color="rgba(255,255,255,0.05)", width=1)),
     )
     fig.update_layout(
         template="plotly_dark",
         paper_bgcolor="#0b1020",
         plot_bgcolor="#0b1020",
-        margin=dict(l=20, r=24, t=56, b=36),
+        margin=dict(l=22, r=24, t=56, b=36),
         height=height,
         font=dict(color="#e5eefc"),
-        xaxis=dict(gridcolor="#25304a"),
-        yaxis=dict(gridcolor="#25304a", automargin=True),
+        xaxis=dict(gridcolor="#25304a", zeroline=False),
+        yaxis=dict(gridcolor="#25304a", automargin=True, categoryorder="total ascending"),
         title=dict(x=0.02, font=dict(size=15)),
+        showlegend=False,
+        bargap=0.22,
     )
     return fig
 
@@ -311,7 +314,14 @@ def build_page(df: pd.DataFrame) -> str:
             ult_entrega = ult_dt.strftime("%d/%m/%Y %H:%M:%S")
 
     daily_fig = make_line_chart(df)
-    top_agente_fig = make_rank_chart(_top_series(df, "Agente", "Agente", limit=12), "Agente", "Loggers", "Top agentes", "#7aa2ff", height=500)
+    top_agente_fig = make_rank_chart(
+        _top_series(df, "Agente", "Agente", limit=12),
+        "Agente",
+        "Loggers",
+        "Top agentes",
+        "#7aa2ff",
+        height=540,
+    )
     top_uf_fig = make_bar_chart(_top_series(df, "UF", "UF"), "UF", "Loggers", "Entregas por UF", "#ffb347")
 
     today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
@@ -346,15 +356,16 @@ def build_page(df: pd.DataFrame) -> str:
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
     :root {{
-      --bg: #08111f;
-      --panel: #111a2c;
-      --panel-2: #0d1525;
-      --line: #22314b;
-      --text: #e7eefc;
-      --muted: #94a3b8;
-      --accent: #ffb347;
+      --bg: #07101d;
+      --panel: rgba(14, 22, 38, 0.96);
+      --panel-2: rgba(10, 16, 29, 0.96);
+      --line: rgba(122,162,255,0.16);
+      --line-strong: rgba(122,162,255,0.28);
+      --text: #e8eefb;
+      --muted: #93a2b8;
+      --accent: #ffc46b;
       --accent-2: #7aa2ff;
-      --good: #2dd4bf;
+      --accent-3: #2dd4bf;
       --warn: #f59e0b;
       --danger: #fb7185;
     }}
@@ -363,32 +374,43 @@ def build_page(df: pd.DataFrame) -> str:
       margin: 0;
       font-family: "Segoe UI", Tahoma, Arial, sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(122,162,255,0.14), transparent 28%),
-        radial-gradient(circle at top right, rgba(255,179,71,0.12), transparent 24%),
-        linear-gradient(180deg, #09111f 0%, #060b15 100%);
+        radial-gradient(circle at top left, rgba(122,162,255,0.13), transparent 26%),
+        radial-gradient(circle at top right, rgba(255,196,107,0.12), transparent 22%),
+        linear-gradient(180deg, #09111e 0%, #050911 100%);
       color: var(--text);
     }}
-    .wrap {{ max-width: 1580px; margin: 0 auto; padding: 24px 18px 40px; }}
+    .wrap {{ max-width: 1620px; margin: 0 auto; padding: 24px 18px 40px; }}
     .hero {{
-      background: linear-gradient(135deg, rgba(17,26,44,0.96), rgba(10,16,29,0.98));
-      border: 1px solid rgba(122,162,255,0.16);
-      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(17,26,44,0.98), rgba(10,16,29,0.98)),
+        radial-gradient(circle at top right, rgba(122,162,255,0.08), transparent 30%);
+      border: 1px solid var(--line);
+      border-radius: 22px;
       padding: 24px 24px 20px;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+      box-shadow: 0 18px 44px rgba(0,0,0,0.30);
+      position: relative;
+      overflow: hidden;
+    }}
+    .hero::before {{
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 5px;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
     }}
     .eyebrow {{
       display: inline-flex;
       align-items: center;
       gap: 8px;
       color: var(--accent);
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-weight: 800;
+      letter-spacing: 0.10em;
       text-transform: uppercase;
       font-size: 12px;
     }}
     h1 {{
       margin: 10px 0 8px;
-      font-size: 30px;
+      font-size: 31px;
       line-height: 1.1;
     }}
     .sub {{
@@ -418,11 +440,13 @@ def build_page(df: pd.DataFrame) -> str:
       margin: 16px 0 18px;
     }}
     .kpi {{
-      background: linear-gradient(180deg, rgba(17,26,44,0.98), rgba(12,19,34,0.98));
-      border: 1px solid rgba(122,162,255,0.16);
+      background:
+        linear-gradient(180deg, rgba(17,26,44,0.98), rgba(11,18,32,0.98));
+      border: 1px solid var(--line);
       border-radius: 18px;
       padding: 16px 16px 14px;
       min-height: 108px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
     }}
     .kpi .label {{
       color: var(--muted);
@@ -449,29 +473,32 @@ def build_page(df: pd.DataFrame) -> str:
     }}
     .grid2 {{
       display: grid;
-      grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+      grid-template-columns: minmax(0, 2.15fr) minmax(300px, 0.95fr);
       gap: 14px;
     }}
     .panel {{
-      background: rgba(17,26,44,0.96);
-      border: 1px solid rgba(122,162,255,0.16);
-      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
       padding: 14px 14px 10px;
       overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
     }}
     .panel-wide {{
       padding-bottom: 8px;
+      border-color: var(--line-strong);
     }}
     .panel-title {{
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 800;
       margin: 2px 0 12px;
+      color: #f6f8ff;
     }}
     .section {{
       margin-top: 18px;
-      background: rgba(17,26,44,0.94);
-      border: 1px solid rgba(122,162,255,0.16);
-      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
       padding: 16px;
     }}
     .section h2 {{
@@ -495,8 +522,8 @@ def build_page(df: pd.DataFrame) -> str:
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid rgba(122,162,255,0.24);
-      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(122,162,255,0.26);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
       color: var(--text);
       text-decoration: none;
       border-radius: 12px;
@@ -517,7 +544,7 @@ def build_page(df: pd.DataFrame) -> str:
     table.data-table {{
       width: 100%;
       border-collapse: collapse;
-      background: rgba(10,16,29,0.92);
+      background: rgba(9,14,25,0.95);
       min-width: 1050px;
     }}
     .data-table th,
@@ -532,8 +559,8 @@ def build_page(df: pd.DataFrame) -> str:
     .data-table th {{
       position: sticky;
       top: 0;
-      background: rgba(28,35,51,0.98);
-      color: #dbeafe;
+      background: linear-gradient(180deg, rgba(30,37,54,0.98), rgba(25,31,46,0.98));
+      color: #e6efff;
       z-index: 1;
     }}
     .data-table tbody tr:nth-child(even) {{ background: rgba(255,255,255,0.015); }}
