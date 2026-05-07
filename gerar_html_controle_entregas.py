@@ -1125,19 +1125,13 @@ def build_page(df: pd.DataFrame) -> str:
           const agent = clean(row.Agente) || "SEM AGENTE";
           const logger = clean(row.Logger);
           if (!logger) return;
-          if (!map.has(agent)) map.set(agent, {{ ret: new Set(), pend: new Set() }});
-          const bucket = map.get(agent);
-          const status = clean(row.StatusRetorno);
-          if (status === "Retornado") bucket.ret.add(logger);
-          if (status === "Pendente de Retorno") bucket.pend.add(logger);
+          if (!map.has(agent)) map.set(agent, new Set());
+          map.get(agent).add(logger);
         }});
         const arr = Array.from(map.entries()).map(function(entry) {{
           const agent = entry[0];
-          const bucket = entry[1];
-          const ret = bucket.ret.size;
-          const pend = bucket.pend.size;
-          const total = ret + pend;
-          return {{ agent: agent, ret: ret, pend: pend, total: total, pct: total > 0 ? (ret / total) * 100 : 0 }};
+          const total = entry[1].size;
+          return {{ agent: agent, total: total }};
         }});
         arr.sort(function(a, b) {{ return b.total - a.total; }});
         return arr.slice(0, 12).sort(function(a, b) {{ return a.total - b.total; }});
@@ -1149,11 +1143,11 @@ def build_page(df: pd.DataFrame) -> str:
           const uf = clean(row.UF) || "SEM UF";
           const logger = clean(row.Logger);
           if (!logger) return;
-          if (!map.has(uf)) map.set(uf, {{ total: new Set() }});
-          map.get(uf).total.add(logger);
+          if (!map.has(uf)) map.set(uf, new Set());
+          map.get(uf).add(logger);
         }});
         const arr = Array.from(map.entries()).map(function(entry) {{
-          return {{ uf: entry[0], total: entry[1].total.size }};
+          return {{ uf: entry[0], total: entry[1].size }};
         }});
         arr.sort(function(a, b) {{ return b.total - a.total; }});
         return arr.slice(0, 12).sort(function(a, b) {{ return a.total - b.total; }});
@@ -1232,44 +1226,28 @@ def build_page(df: pd.DataFrame) -> str:
 
       function renderAgentChart(rows) {{
         const series = buildAgentSeries(rows);
-        const traceRet = {{
+        const trace = {{
           y: series.map((d) => d.agent),
-          x: series.map((d) => d.ret),
+          x: series.map((d) => d.total),
           orientation: "h",
           type: "bar",
-          name: "Retornado ao estoque",
+          name: "Total",
           marker: {{ color: "#2f6fd6" }},
-          text: series.map((d) => d.ret > 0 ? Math.round(d.pct) + "%" : ""),
-          textposition: "inside",
-          insidetextanchor: "middle",
-          textfont: {{ color: "#ffffff", size: 15 }},
+          text: series.map((d) => formatInt(d.total)),
+          textposition: "outside",
+          textfont: {{ color: "#f3f7ff", size: 15 }},
           cliponaxis: false,
-          customdata: series.map((d) => [d.pct]),
-          hovertemplate: "<b>%{{y}}</b><br>Retornado: %{{x}}<br>% retornado: %{{customdata[0]:.0f}}%<extra></extra>"
-        }};
-        const tracePend = {{
-          y: series.map((d) => d.agent),
-          x: series.map((d) => d.pend),
-          orientation: "h",
-          type: "bar",
-          name: "Pendente de retorno",
-          marker: {{ color: "#9bc7ff" }},
-          cliponaxis: false,
-          hovertemplate: "<b>%{{y}}</b><br>Pendente: %{{x}}<extra></extra>"
+          hovertemplate: "<b>%{{y}}</b><br>Total: %{{x}}<extra></extra>"
         }};
         const maxTotal = series.length ? Math.max.apply(null, series.map((d) => d.total)) : 1;
-        const annotations = series
-          .filter((d) => d.total > 0)
-          .map((d) => ({{ x: d.total, y: d.agent, text: formatInt(d.total), showarrow: false, xshift: 14, font: {{ color: "#e5eefc", size: 13 }} }}));
-        Plotly.react("chart-agentes", [traceRet, tracePend], {{
-          barmode: "stack",
+        Plotly.react("chart-agentes", [trace], {{
           template: "plotly_dark",
           paper_bgcolor: "#0b1020",
           plot_bgcolor: "#0b1020",
-          margin: {{ l: 22, r: 44, t: 56, b: 36 }},
+          margin: {{ l: 22, r: 52, t: 56, b: 36 }},
           height: 620,
           font: {{ color: "#e5eefc" }},
-          xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] }},
+          xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.18] }},
           yaxis: {{
             gridcolor: "#25304a",
             automargin: true,
@@ -1278,15 +1256,7 @@ def build_page(df: pd.DataFrame) -> str:
             autorange: "reversed"
           }},
           title: {{ x: 0.02, font: {{ size: 15 }} }},
-          legend: {{
-            orientation: "h",
-            yanchor: "bottom",
-            y: 1.02,
-            xanchor: "left",
-            x: 0.0
-          }},
           bargap: 0.25,
-          annotations: annotations
         }}, {{ displayModeBar: false, responsive: true }});
       }}
 
@@ -1299,21 +1269,21 @@ def build_page(df: pd.DataFrame) -> str:
           orientation: "h",
           type: "bar",
           name: "Loggers",
-          marker: {{ color: "#9bc7ff" }},
+          marker: {{ color: "#5c9dff" }},
+          text: series.map((d) => formatInt(d.total)),
+          textposition: "outside",
+          textfont: {{ color: "#f3f7ff", size: 15 }},
           cliponaxis: false,
           hovertemplate: "<b>%{{y}}</b><br>Loggers: %{{x}}<extra></extra>"
         }};
-        const annotations = series
-          .filter((d) => d.total > 0)
-          .map((d) => ({{ x: d.total, y: d.uf, text: formatInt(d.total), showarrow: false, xshift: 14, font: {{ color: "#e5eefc", size: 13 }} }}));
         Plotly.react("chart-ufs", [trace], {{
           template: "plotly_dark",
           paper_bgcolor: "#0b1020",
           plot_bgcolor: "#0b1020",
-          margin: {{ l: 22, r: 44, t: 56, b: 36 }},
+          margin: {{ l: 22, r: 52, t: 56, b: 36 }},
           height: 620,
           font: {{ color: "#e5eefc" }},
-          xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] }},
+          xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.18] }},
           yaxis: {{
             gridcolor: "#25304a",
             automargin: true,
@@ -1324,7 +1294,6 @@ def build_page(df: pd.DataFrame) -> str:
           title: {{ x: 0.02, font: {{ size: 15 }} }},
           showlegend: false,
           bargap: 0.22,
-          annotations: annotations
         }}, {{ displayModeBar: false, responsive: true }});
       }}
 
