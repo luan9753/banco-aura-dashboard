@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 
 
@@ -116,6 +117,37 @@ def _series_by_day(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _daily_return_stack(df: pd.DataFrame) -> pd.DataFrame:
+    today = pd.Timestamp.now().normalize()
+    start = today - pd.Timedelta(days=WINDOW_DAYS)
+    days = pd.DataFrame({"Dia": pd.date_range(start=start, end=today, freq="D")})
+    if df.empty:
+        days["Retornado"] = 0
+        days["Pendente"] = 0
+        days["Total"] = 0
+        days["PctRetornado"] = 0.0
+        return days
+
+    base = df.copy()
+    base["Dia"] = pd.to_datetime(base["Dia"], errors="coerce").dt.normalize()
+    base = base[base["Dia"].notna()].copy()
+    base["Status Retorno"] = base["Status Retorno"].fillna("").astype(str).str.strip()
+
+    agg = (
+        base.assign(
+            Retornado=base["Status Retorno"].eq("Retornado").astype(int),
+            Pendente=base["Status Retorno"].eq("Pendente de Retorno").astype(int),
+        )
+        .groupby("Dia", as_index=False)[["Retornado", "Pendente"]]
+        .sum()
+    )
+    out = days.merge(agg, how="left", on="Dia")
+    out[["Retornado", "Pendente"]] = out[["Retornado", "Pendente"]].fillna(0).astype(int)
+    out["Total"] = out["Retornado"] + out["Pendente"]
+    out["PctRetornado"] = out["Retornado"].where(out["Total"].gt(0), 0) / out["Total"].where(out["Total"].gt(0), 1) * 100
+    return out
+
+
 def _top_series(df: pd.DataFrame, col: str, label: str, limit: int = 8) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=[label, "Loggers"])
@@ -194,7 +226,7 @@ def make_bar_chart(
 
 def make_line_chart(df: pd.DataFrame):
     if df.empty:
-        fig = px.bar(title="Entregas por dia")
+        fig = go.Figure()
         fig.add_annotation(
             text="Sem dados para exibir",
             x=0.5,
@@ -206,16 +238,31 @@ def make_line_chart(df: pd.DataFrame):
         )
         fig.update_layout(template="plotly_dark", paper_bgcolor="#0b1020", plot_bgcolor="#0b1020")
         return fig
-    chart_df = _series_by_day(df).copy()
-    chart_df["Dia"] = chart_df["Dia"].dt.strftime("%d/%m")
-    fig = px.bar(chart_df, x="Dia", y="Loggers", title="Entregas por dia", color_discrete_sequence=[DAY_COLOR])
-    fig.update_traces(
+    chart_df = _daily_return_stack(df).copy()
+    chart_df["DiaTxt"] = chart_df["Dia"].dt.strftime("%d/%m")
+    fig = go.Figure()
+    fig.add_bar(
+        x=chart_df["DiaTxt"],
+        y=chart_df["Retornado"],
+        name="Retornado ao estoque",
+        marker=dict(color="#2f6fd6", line=dict(width=0)),
+        text=chart_df["PctRetornado"].map(lambda v: f"{v:.0f}%"),
+        textposition="inside",
+        insidetextanchor="middle",
+        textfont=dict(color="#ffffff"),
         cliponaxis=False,
-        texttemplate="%{y}",
-        textposition="outside",
-        marker_line_width=0,
+        hovertemplate="<b>%{x}</b><br>Retornado: %{y}<br>% retornado: %{customdata[0]:.0f}%<extra></extra>",
+        customdata=chart_df[["PctRetornado"]],
+    )
+    fig.add_bar(
+        x=chart_df["DiaTxt"],
+        y=chart_df["Pendente"],
+        name="Pendente de retorno",
+        marker=dict(color="#9bc7ff", line=dict(width=0)),
+        hovertemplate="<b>%{x}</b><br>Pendente: %{y}<extra></extra>",
     )
     fig.update_layout(
+        barmode="stack",
         template="plotly_dark",
         paper_bgcolor="#0b1020",
         plot_bgcolor="#0b1020",
@@ -226,6 +273,13 @@ def make_line_chart(df: pd.DataFrame):
         yaxis=dict(gridcolor="#25304a"),
         title=dict(x=0.02, font=dict(size=15)),
         bargap=0.22,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0.0,
+        ),
     )
     return fig
 
