@@ -181,7 +181,7 @@ def make_line_chart(df: pd.DataFrame):
         return fig
     chart_df = _series_by_day(df).copy()
     chart_df["Dia"] = chart_df["Dia"].dt.strftime("%d/%m")
-    fig = px.bar(chart_df, x="Dia", y="Loggers", title="Entregas por dia", color_discrete_sequence=["#ffb347"])
+    fig = px.bar(chart_df, x="Dia", y="Loggers", title="Entregas por dia", color_discrete_sequence=["#7aa2ff"])
     fig.update_traces(
         cliponaxis=False,
         texttemplate="%{y}",
@@ -322,7 +322,7 @@ def build_page(df: pd.DataFrame) -> str:
         "#7aa2ff",
         height=540,
     )
-    top_uf_fig = make_bar_chart(_top_series(df, "UF", "UF"), "UF", "Loggers", "Entregas por UF", "#ffb347")
+    top_uf_fig = make_bar_chart(_top_series(df, "UF", "UF"), "UF", "Loggers", "Entregas por UF", "#4f8cff")
 
     today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
     yest_df = df[df["Dia"].eq(yesterday)].copy() if not df.empty else df.head(0).copy()
@@ -363,8 +363,8 @@ def build_page(df: pd.DataFrame) -> str:
       --line-strong: rgba(122,162,255,0.28);
       --text: #e8eefb;
       --muted: #93a2b8;
-      --accent: #ffc46b;
-      --accent-2: #7aa2ff;
+      --accent: #8fb8ff;
+      --accent-2: #4f8cff;
       --accent-3: #2dd4bf;
       --warn: #f59e0b;
       --danger: #fb7185;
@@ -375,7 +375,7 @@ def build_page(df: pd.DataFrame) -> str:
       font-family: "Segoe UI", Tahoma, Arial, sans-serif;
       background:
         radial-gradient(circle at top left, rgba(122,162,255,0.13), transparent 26%),
-        radial-gradient(circle at top right, rgba(255,196,107,0.12), transparent 22%),
+        radial-gradient(circle at top right, rgba(79,140,255,0.12), transparent 22%),
         linear-gradient(180deg, #09111e 0%, #050911 100%);
       color: var(--text);
     }}
@@ -383,7 +383,7 @@ def build_page(df: pd.DataFrame) -> str:
     .hero {{
       background:
         linear-gradient(135deg, rgba(17,26,44,0.98), rgba(10,16,29,0.98)),
-        radial-gradient(circle at top right, rgba(122,162,255,0.08), transparent 30%);
+        radial-gradient(circle at top right, rgba(122,162,255,0.10), transparent 30%);
       border: 1px solid var(--line);
       border-radius: 22px;
       padding: 24px 24px 20px;
