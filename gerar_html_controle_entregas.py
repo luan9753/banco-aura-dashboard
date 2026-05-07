@@ -167,7 +167,7 @@ def make_bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = "#
 
 def make_line_chart(df: pd.DataFrame):
     if df.empty:
-        fig = px.line(title="Entregas por dia")
+        fig = px.bar(title="Entregas por dia")
         fig.add_annotation(
             text="Sem dados para exibir",
             x=0.5,
@@ -181,17 +181,66 @@ def make_line_chart(df: pd.DataFrame):
         return fig
     chart_df = _series_by_day(df).copy()
     chart_df["Dia"] = chart_df["Dia"].dt.strftime("%d/%m")
-    fig = px.line(chart_df, x="Dia", y="Loggers", markers=True, title="Entregas por dia")
-    fig.update_traces(line=dict(color="#ffb347", width=3), marker=dict(size=8))
+    fig = px.bar(chart_df, x="Dia", y="Loggers", title="Entregas por dia", color_discrete_sequence=["#ffb347"])
+    fig.update_traces(
+        cliponaxis=False,
+        texttemplate="%{y}",
+        textposition="outside",
+        marker_line_width=0,
+    )
     fig.update_layout(
         template="plotly_dark",
         paper_bgcolor="#0b1020",
         plot_bgcolor="#0b1020",
-        margin=dict(l=24, r=20, t=52, b=44),
-        height=360,
+        margin=dict(l=24, r=20, t=52, b=52),
+        height=380,
         font=dict(color="#e5eefc"),
         xaxis=dict(gridcolor="#25304a"),
         yaxis=dict(gridcolor="#25304a"),
+        title=dict(x=0.02, font=dict(size=15)),
+        bargap=0.22,
+    )
+    return fig
+
+
+def make_rank_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str, height: int = 430):
+    if df.empty:
+        fig = px.bar(title=title)
+        fig.add_annotation(
+            text="Sem dados para exibir",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+            font=dict(color="#cbd5e1", size=16),
+        )
+        fig.update_layout(template="plotly_dark", paper_bgcolor="#0b1020", plot_bgcolor="#0b1020")
+        return fig
+    chart_df = df.copy().sort_values(y, ascending=True)
+    fig = px.bar(
+        chart_df,
+        x=y,
+        y=x,
+        orientation="h",
+        title=title,
+        color_discrete_sequence=[color],
+    )
+    fig.update_traces(
+        cliponaxis=False,
+        texttemplate="%{x}",
+        textposition="outside",
+        marker_line_width=0,
+    )
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="#0b1020",
+        plot_bgcolor="#0b1020",
+        margin=dict(l=20, r=24, t=56, b=36),
+        height=height,
+        font=dict(color="#e5eefc"),
+        xaxis=dict(gridcolor="#25304a"),
+        yaxis=dict(gridcolor="#25304a", automargin=True),
         title=dict(x=0.02, font=dict(size=15)),
     )
     return fig
@@ -262,7 +311,7 @@ def build_page(df: pd.DataFrame) -> str:
             ult_entrega = ult_dt.strftime("%d/%m/%Y %H:%M:%S")
 
     daily_fig = make_line_chart(df)
-    top_agente_fig = make_bar_chart(_top_series(df, "Agente", "Agente"), "Agente", "Loggers", "Entregas por agente", "#7aa2ff")
+    top_agente_fig = make_rank_chart(_top_series(df, "Agente", "Agente", limit=12), "Agente", "Loggers", "Top agentes", "#7aa2ff", height=500)
     top_uf_fig = make_bar_chart(_top_series(df, "UF", "UF"), "UF", "Loggers", "Entregas por UF", "#ffb347")
 
     today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
@@ -400,7 +449,7 @@ def build_page(df: pd.DataFrame) -> str:
     }}
     .grid2 {{
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
       gap: 14px;
     }}
     .panel {{
