@@ -116,7 +116,7 @@ def _series_by_day(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def _top_series(df: pd.DataFrame, col: str, label: str, limit: int = 10) -> pd.DataFrame:
+def _top_series(df: pd.DataFrame, col: str, label: str, limit: int = 8) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=[label, "Loggers"])
     out = (
@@ -144,17 +144,23 @@ def make_bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = "#
         fig.update_layout(template="plotly_dark", paper_bgcolor="#0b1020", plot_bgcolor="#0b1020")
         return fig
     fig = px.bar(df, x=x, y=y, title=title, color_discrete_sequence=[color])
-    fig.update_traces(cliponaxis=False, texttemplate="%{y}", textposition="outside")
+    fig.update_traces(
+        cliponaxis=False,
+        texttemplate="%{y}",
+        textposition="outside",
+        marker_line_width=0,
+    )
     fig.update_layout(
         template="plotly_dark",
         paper_bgcolor="#0b1020",
         plot_bgcolor="#0b1020",
-        margin=dict(l=20, r=20, t=60, b=40),
-        height=360,
+        margin=dict(l=20, r=20, t=52, b=48),
+        height=320,
         font=dict(color="#e5eefc"),
         xaxis=dict(gridcolor="#25304a"),
         yaxis=dict(gridcolor="#25304a"),
-        title=dict(x=0.02, font=dict(size=16)),
+        title=dict(x=0.02, font=dict(size=15)),
+        bargap=0.28,
     )
     return fig
 
@@ -181,12 +187,12 @@ def make_line_chart(df: pd.DataFrame):
         template="plotly_dark",
         paper_bgcolor="#0b1020",
         plot_bgcolor="#0b1020",
-        margin=dict(l=20, r=20, t=60, b=40),
+        margin=dict(l=24, r=20, t=52, b=44),
         height=360,
         font=dict(color="#e5eefc"),
         xaxis=dict(gridcolor="#25304a"),
         yaxis=dict(gridcolor="#25304a"),
-        title=dict(x=0.02, font=dict(size=16)),
+        title=dict(x=0.02, font=dict(size=15)),
     )
     return fig
 
@@ -386,11 +392,16 @@ def build_page(df: pd.DataFrame) -> str:
       font-size: 12px;
       color: var(--muted);
     }}
-    .grid3 {{
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .chart-stack {{
+      display: flex;
+      flex-direction: column;
       gap: 14px;
       margin: 14px 0 18px;
+    }}
+    .grid2 {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }}
     .panel {{
       background: rgba(17,26,44,0.96);
@@ -398,6 +409,9 @@ def build_page(df: pd.DataFrame) -> str:
       border-radius: 18px;
       padding: 14px 14px 10px;
       overflow: hidden;
+    }}
+    .panel-wide {{
+      padding-bottom: 8px;
     }}
     .panel-title {{
       font-size: 15px;
@@ -495,7 +509,7 @@ def build_page(df: pd.DataFrame) -> str:
     }}
     @media (max-width: 1280px) {{
       .kpis {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
-      .grid3, .two-col {{ grid-template-columns: 1fr; }}
+      .grid2, .two-col {{ grid-template-columns: 1fr; }}
     }}
     @media (max-width: 720px) {{
       .wrap {{ padding: 14px 10px 24px; }}
@@ -530,18 +544,20 @@ def build_page(df: pd.DataFrame) -> str:
       <div class="kpi"><div class="label">Retornados no periodo</div><div class="value">{fmt_int(total_retorno)}</div><div class="foot">Status Retorno = Retornado</div></div>
     </div>
 
-    <div class="grid3">
-      <div class="panel">
+    <div class="chart-stack">
+      <div class="panel panel-wide">
         <div class="panel-title">Entregas por dia</div>
         {fig_div(daily_fig)}
       </div>
-      <div class="panel">
-        <div class="panel-title">Top agentes</div>
-        {fig_div(top_agente_fig)}
-      </div>
-      <div class="panel">
-        <div class="panel-title">Top UFs</div>
-        {fig_div(top_uf_fig)}
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">Top agentes</div>
+          {fig_div(top_agente_fig)}
+        </div>
+        <div class="panel">
+          <div class="panel-title">Top UFs</div>
+          {fig_div(top_uf_fig)}
+        </div>
       </div>
     </div>
 
