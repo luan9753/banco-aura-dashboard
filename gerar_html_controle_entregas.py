@@ -401,15 +401,7 @@ def build_page(df: pd.DataFrame) -> str:
         if pd.notna(ult_dt):
             ult_entrega = ult_dt.strftime("%d/%m/%Y %H:%M:%S")
 
-    daily_fig = make_bar_chart(
-        _series_by_day(df).assign(Dia=lambda d: d["Dia"].dt.strftime("%d/%m")),
-        "Dia",
-        "Loggers",
-        "Entregas por dia",
-        DAY_COLOR,
-        orientation="v",
-        height=380,
-    )
+    daily_fig = make_line_chart(df)
     top_agente_fig = make_rank_chart(
         _top_series(df, "Agente", "Agente", limit=12),
         "Agente",
