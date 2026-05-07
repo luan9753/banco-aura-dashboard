@@ -288,10 +288,10 @@ WITH so AS (
     so.id,
     so.order_code,
     so.delivery_date,
-    so.delivery_date::date AS dia
+    (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date AS dia
   FROM public.sync_orders so
-  WHERE so.delivery_date::date >= %s::date
-    AND (%s::date IS NULL OR so.delivery_date::date <= %s::date)
+  WHERE (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date >= %s::date
+    AND (%s::date IS NULL OR (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date <= %s::date)
 ),
 so_orders AS (
   SELECT DISTINCT
@@ -332,7 +332,7 @@ daily_latency AS (
 ),
 sensor_sync_items AS (
   SELECT
-    coalesce(si.delivery_date, so.delivery_date)::date AS dia,
+    (coalesce(si.delivery_date, so.delivery_date) AT TIME ZONE 'America/Sao_Paulo')::date AS dia,
     coalesce(si.delivery_date, so.delivery_date) AS delivery_date_item,
     CASE
       WHEN upper(coalesce(si.device_serial, '')) LIKE 'TA%%' THEN 'ARES'
@@ -468,8 +468,8 @@ WITH so AS (
     so.id,
     so.order_code
   FROM public.sync_orders so
-  WHERE so.delivery_date::date >= %s::date
-    AND (%s::date IS NULL OR so.delivery_date::date <= %s::date)
+  WHERE (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date >= %s::date
+    AND (%s::date IS NULL OR (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date <= %s::date)
 ),
 order_keys_all AS (
   SELECT DISTINCT
@@ -515,10 +515,10 @@ WITH so AS (
   SELECT
     so.id,
     so.order_code,
-    so.delivery_date::date AS dia
+    (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date AS dia
   FROM public.sync_orders so
-  WHERE so.delivery_date::date >= %s::date
-    AND (%s::date IS NULL OR so.delivery_date::date <= %s::date)
+  WHERE (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date >= %s::date
+    AND (%s::date IS NULL OR (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date <= %s::date)
 ),
 order_keys_all AS (
   SELECT DISTINCT
@@ -597,10 +597,10 @@ WITH so AS (
   SELECT
     so.id,
     so.order_code,
-    so.delivery_date::date AS dia
+    (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date AS dia
   FROM public.sync_orders so
-  WHERE so.delivery_date::date >= %s::date
-    AND (%s::date IS NULL OR so.delivery_date::date <= %s::date)
+  WHERE (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date >= %s::date
+    AND (%s::date IS NULL OR (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date <= %s::date)
 ),
 order_keys_all AS (
   SELECT DISTINCT
@@ -680,10 +680,10 @@ WITH so AS (
   SELECT
     so.id,
     so.order_code,
-    so.delivery_date::date AS dia
+    (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date AS dia
   FROM public.sync_orders so
-  WHERE so.delivery_date::date >= %s::date
-    AND (%s::date IS NULL OR so.delivery_date::date <= %s::date)
+  WHERE (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date >= %s::date
+    AND (%s::date IS NULL OR (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date <= %s::date)
     AND so.order_code IS NOT NULL
     AND btrim(so.order_code) <> ''
 ),
@@ -758,8 +758,8 @@ WITH so_base AS (
     so.order_code,
     max(so.delivery_date) AS delivery_date
   FROM public.sync_orders so
-  WHERE so.delivery_date::date >= %s::date
-    AND (%s::date IS NULL OR so.delivery_date::date <= %s::date)
+  WHERE (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date >= %s::date
+    AND (%s::date IS NULL OR (so.delivery_date AT TIME ZONE 'America/Sao_Paulo')::date <= %s::date)
     AND so.order_code IS NOT NULL
     AND btrim(so.order_code) <> ''
   GROUP BY so.order_code

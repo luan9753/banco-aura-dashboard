@@ -29,7 +29,7 @@ echo [OK] HTML gerado com sucesso.
 echo.
 
 echo [2/4] Preparando commit no Git...
-git add HTMLACOMPANHAMENTO.html HTMLACOMPANHAMENTO.py ATUALIZAR_E_PUBLICAR_HTML.bat
+git add HTMLACOMPANHAMENTO.html HTMLACOMPANHAMENTO.py gerar_dashboard_entregas.py ATUALIZAR_E_PUBLICAR_HTML.bat
 if errorlevel 1 set "ERRMSG=Falha no git add (passo 2)." & goto :FAIL
 
 git diff --cached --quiet --exit-code
