@@ -174,6 +174,7 @@ def make_bar_chart(
     color: str = "#7aa2ff",
     orientation: str = "v",
     height: int = 320,
+    show_text: bool = True,
 ):
     if df.empty:
         fig = px.bar(title=title)
@@ -192,17 +193,18 @@ def make_bar_chart(
     if orientation == "h" and y in chart_df.columns:
         chart_df = chart_df.sort_values(x, ascending=False)
     fig = px.bar(chart_df, x=x, y=y, title=title, color_discrete_sequence=[color], orientation=orientation)
-    text_template = "%{x}" if orientation == "h" else "%{y}"
     trace_kwargs = dict(
         cliponaxis=False,
-        texttemplate=text_template,
-        textposition="outside",
         marker_line_width=0,
     )
-    if orientation == "h":
-        trace_kwargs["textposition"] = "inside"
-        trace_kwargs["insidetextanchor"] = "middle"
-        trace_kwargs["textfont"] = dict(color="#000000")
+    if show_text:
+        text_template = "%{x}" if orientation == "h" else "%{y}"
+        trace_kwargs["texttemplate"] = text_template
+        trace_kwargs["textposition"] = "outside"
+        if orientation == "h":
+            trace_kwargs["textposition"] = "inside"
+            trace_kwargs["insidetextanchor"] = "middle"
+            trace_kwargs["textfont"] = dict(color="#000000")
     fig.update_traces(**trace_kwargs)
     fig.update_layout(
         template="plotly_dark",
@@ -422,13 +424,14 @@ def build_page(df: pd.DataFrame) -> str:
         height=540,
     )
     top_uf_fig = make_bar_chart(
-        _top_series(df, "UF", "UF"),
+        _top_series(df, "UF", "UF", limit=12),
         "Loggers",
         "UF",
         "Entregas por UF",
         UF_COLOR,
         orientation="h",
-        height=540,
+        height=600,
+        show_text=False,
     )
 
     today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
