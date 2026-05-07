@@ -129,9 +129,9 @@ def _top_series(df: pd.DataFrame, col: str, label: str, limit: int = 8) -> pd.Da
     return out
 
 
-BLUE_PALETTE_DAY = ["#c6dcff", "#b1d0ff", "#9bc0ff", "#86b2ff", "#73a4ff", "#5f95ff", "#4c87f0"]
-BLUE_PALETTE_AGENT = ["#7aa2ff", "#6e97ff", "#638dff", "#5681f7", "#4d76ea", "#436bdf"]
-BLUE_PALETTE_UF = ["#d8e7ff", "#c9dbff", "#b9ceff", "#a8c0ff", "#95b2ff", "#83a4ff", "#7095f0", "#5f87e4"]
+DAY_COLOR = "#6f9eff"
+AGENT_COLOR = "#2f6fd6"
+UF_COLOR = "#9bc7ff"
 
 
 def make_bar_chart(
@@ -140,7 +140,6 @@ def make_bar_chart(
     y: str,
     title: str,
     color: str = "#7aa2ff",
-    palette: list[str] | None = None,
     orientation: str = "v",
     height: int = 320,
 ):
@@ -158,9 +157,6 @@ def make_bar_chart(
         fig.update_layout(template="plotly_dark", paper_bgcolor="#0b1020", plot_bgcolor="#0b1020")
         return fig
     fig = px.bar(df, x=x, y=y, title=title, color_discrete_sequence=[color], orientation=orientation)
-    if palette:
-        colors = [palette[i % len(palette)] for i in range(len(df))]
-        fig.update_traces(marker_color=colors)
     text_template = "%{x}" if orientation == "h" else "%{y}"
     fig.update_traces(
         cliponaxis=False,
@@ -199,7 +195,7 @@ def make_line_chart(df: pd.DataFrame):
         return fig
     chart_df = _series_by_day(df).copy()
     chart_df["Dia"] = chart_df["Dia"].dt.strftime("%d/%m")
-    fig = px.bar(chart_df, x="Dia", y="Loggers", title="Entregas por dia", color_discrete_sequence=["#7aa2ff"])
+    fig = px.bar(chart_df, x="Dia", y="Loggers", title="Entregas por dia", color_discrete_sequence=[DAY_COLOR])
     fig.update_traces(
         cliponaxis=False,
         texttemplate="%{y}",
@@ -228,7 +224,6 @@ def make_rank_chart(
     title: str,
     color: str,
     height: int = 430,
-    palette: list[str] | None = None,
 ):
     if df.empty:
         fig = px.bar(title=title)
@@ -252,9 +247,6 @@ def make_rank_chart(
         title=title,
         color_discrete_sequence=[color],
     )
-    if palette:
-        colors = [palette[i % len(palette)] for i in range(len(chart_df))]
-        fig.update_traces(marker_color=colors)
     fig.update_traces(
         cliponaxis=False,
         texttemplate="%{x}",
@@ -347,8 +339,7 @@ def build_page(df: pd.DataFrame) -> str:
         "Dia",
         "Loggers",
         "Entregas por dia",
-        "#7aa2ff",
-        palette=BLUE_PALETTE_DAY,
+        DAY_COLOR,
         orientation="v",
         height=380,
     )
@@ -357,17 +348,15 @@ def build_page(df: pd.DataFrame) -> str:
         "Agente",
         "Loggers",
         "Top agentes",
-        "#7aa2ff",
+        AGENT_COLOR,
         height=540,
-        palette=BLUE_PALETTE_AGENT,
     )
     top_uf_fig = make_bar_chart(
         _top_series(df, "UF", "UF"),
         "Loggers",
         "UF",
         "Entregas por UF",
-        "#4f8cff",
-        palette=BLUE_PALETTE_UF,
+        UF_COLOR,
         orientation="h",
         height=540,
     )
