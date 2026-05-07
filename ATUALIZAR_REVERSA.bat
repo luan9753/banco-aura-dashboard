@@ -36,7 +36,7 @@ echo [OK] HTML gerado com sucesso.
 echo.
 
 echo [3/4] Preparando commit no Git...
-git add REVERSA_DATALOGGERS.html gerar_html_reversa.py
+git add REVERSA_DATALOGGERS.html gerar_html_reversa.py ATUALIZAR_REVERSA.bat
 
 git diff --cached --quiet --exit-code
 if errorlevel 1 goto :DO_COMMIT
@@ -63,7 +63,13 @@ if "%HAS_CHANGES%"=="0" (
     goto :AFTER_PUSH
 )
 
-git push origin main
+git fetch origin
+if errorlevel 1 set "ERRMSG=Falha no git fetch antes do push (passo 4)." & goto :FAIL
+
+git rebase --autostash origin/main
+if errorlevel 1 set "ERRMSG=Falha no git rebase contra origin/main (passo 4)." & goto :FAIL
+
+git push origin HEAD:main
 if errorlevel 1 set "ERRMSG=Falha no git push (passo 4)." & goto :FAIL
 echo [OK] Push concluido.
 
