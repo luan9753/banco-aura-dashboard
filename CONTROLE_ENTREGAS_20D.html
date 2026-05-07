@@ -181,6 +181,9 @@
     .chart-box {
       min-height: 320px;
       width: 100%;
+      max-height: 620px;
+      overflow-y: auto;
+      padding-right: 6px;
     }
     .section {
       margin-top: 18px;
@@ -310,7 +313,7 @@
       <div class="pill-row">
         <div class="pill"><strong>Janela:</strong> ultimos 20 dias</div>
         <div class="pill"><strong>Ultima entrega:</strong> 06/05/2026 18:57:00</div>
-        <div class="pill"><strong>Gerado em:</strong> 06/05/2026 22:31:31</div>
+        <div class="pill"><strong>Gerado em:</strong> 06/05/2026 22:34:09</div>
       </div>
       <div style="display:flex; justify-content:flex-end; margin-top: 12px;">
         <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
@@ -566,7 +569,7 @@
           return { agent: agent, ret: ret, pend: pend, total: total, pct: total > 0 ? (ret / total) * 100 : 0 };
         });
         arr.sort(function(a, b) { return b.total - a.total; });
-        return arr.slice(0, 12);
+        return arr;
       }
 
       function buildUfSeries(rows) {
@@ -582,7 +585,7 @@
           return { uf: entry[0], total: entry[1].size };
         });
         arr.sort(function(a, b) { return b.total - a.total; });
-        return arr.slice(0, 12);
+        return arr;
       }
 
       function renderKpis(rows) {
@@ -658,6 +661,7 @@
 
       function renderAgentChart(rows) {
         const series = buildAgentSeries(rows);
+        const chartHeight = Math.max(620, 110 + (series.length * 34));
         const traceRet = {
           y: series.map((d) => d.agent),
           x: series.map((d) => d.ret),
@@ -693,7 +697,7 @@
           paper_bgcolor: "#0b1020",
           plot_bgcolor: "#0b1020",
           margin: { l: 22, r: 44, t: 56, b: 36 },
-          height: 620,
+          height: chartHeight,
           font: { color: "#e5eefc" },
           xaxis: { gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] },
           yaxis: {
@@ -718,6 +722,7 @@
 
       function renderUfChart(rows) {
         const series = buildUfSeries(rows);
+        const chartHeight = Math.max(620, 110 + (series.length * 34));
         const maxTotal = series.length ? Math.max.apply(null, series.map((d) => d.total)) : 1;
         const trace = {
           y: series.map((d) => d.uf),
@@ -737,7 +742,7 @@
           paper_bgcolor: "#0b1020",
           plot_bgcolor: "#0b1020",
           margin: { l: 22, r: 44, t: 56, b: 36 },
-          height: 620,
+          height: chartHeight,
           font: { color: "#e5eefc" },
           xaxis: { gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] },
           yaxis: {

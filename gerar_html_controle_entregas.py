@@ -757,6 +757,9 @@ def build_page(df: pd.DataFrame) -> str:
     .chart-box {{
       min-height: 320px;
       width: 100%;
+      max-height: 620px;
+      overflow-y: auto;
+      padding-right: 6px;
     }}
     .section {{
       margin-top: 18px;
@@ -1142,7 +1145,7 @@ def build_page(df: pd.DataFrame) -> str:
           return {{ agent: agent, ret: ret, pend: pend, total: total, pct: total > 0 ? (ret / total) * 100 : 0 }};
         }});
         arr.sort(function(a, b) {{ return b.total - a.total; }});
-        return arr.slice(0, 12);
+        return arr;
       }}
 
       function buildUfSeries(rows) {{
@@ -1158,7 +1161,7 @@ def build_page(df: pd.DataFrame) -> str:
           return {{ uf: entry[0], total: entry[1].size }};
         }});
         arr.sort(function(a, b) {{ return b.total - a.total; }});
-        return arr.slice(0, 12);
+        return arr;
       }}
 
       function renderKpis(rows) {{
@@ -1234,6 +1237,7 @@ def build_page(df: pd.DataFrame) -> str:
 
       function renderAgentChart(rows) {{
         const series = buildAgentSeries(rows);
+        const chartHeight = Math.max(620, 110 + (series.length * 34));
         const traceRet = {{
           y: series.map((d) => d.agent),
           x: series.map((d) => d.ret),
@@ -1269,7 +1273,7 @@ def build_page(df: pd.DataFrame) -> str:
           paper_bgcolor: "#0b1020",
           plot_bgcolor: "#0b1020",
           margin: {{ l: 22, r: 44, t: 56, b: 36 }},
-          height: 620,
+          height: chartHeight,
           font: {{ color: "#e5eefc" }},
           xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] }},
           yaxis: {{
@@ -1294,6 +1298,7 @@ def build_page(df: pd.DataFrame) -> str:
 
       function renderUfChart(rows) {{
         const series = buildUfSeries(rows);
+        const chartHeight = Math.max(620, 110 + (series.length * 34));
         const maxTotal = series.length ? Math.max.apply(null, series.map((d) => d.total)) : 1;
         const trace = {{
           y: series.map((d) => d.uf),
@@ -1313,7 +1318,7 @@ def build_page(df: pd.DataFrame) -> str:
           paper_bgcolor: "#0b1020",
           plot_bgcolor: "#0b1020",
           margin: {{ l: 22, r: 44, t: 56, b: 36 }},
-          height: 620,
+          height: chartHeight,
           font: {{ color: "#e5eefc" }},
           xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] }},
           yaxis: {{
