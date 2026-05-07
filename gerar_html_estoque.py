@@ -14,13 +14,20 @@ import plotly.io as pio
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
+from env_utils import load_env_file
+
 OUTPUT_FILE = Path(__file__).resolve().parent / "ESTOQUE_DATALOGGERS.html"
 APP_DIR = Path(__file__).resolve().parents[1] / "streamlit"
 AUX_STATUS_FILE = APP_DIR / "TAG para Estoque.xlsx"
 
+load_env_file()
+
 POSTGRES_CFG = {
-    "host": "10.141.0.32", "port": 5432,
-    "database": "dtbPortal", "user": "bi_qualidade", "password": ">RI477b:",
+    "host": os.getenv("AURA_POSTGRES_HOST", "10.141.0.32"),
+    "port": int(os.getenv("AURA_POSTGRES_PORT", "5432")),
+    "database": os.getenv("AURA_POSTGRES_NAME", "dtbPortal"),
+    "user": os.getenv("AURA_POSTGRES_USER", "bi_qualidade"),
+    "password": os.getenv("AURA_POSTGRES_PASSWORD", ""),
 }
 DESTINO_CAMARA_FRIA   = "6c1d1b0f-0613-47d3-9687-00f7bdef4980"
 FINALIDADE_PEDIDOS    = "cf90119a-6db4-4b13-ac19-b71572913727"

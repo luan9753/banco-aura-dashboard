@@ -3,6 +3,10 @@ import sys
 from datetime import datetime
 from types import SimpleNamespace
 
+from env_utils import load_env_file
+
+load_env_file()
+
 from gerar_dashboard_entregas import (
     DEFAULT_DATABASE,
     DEFAULT_HOST,

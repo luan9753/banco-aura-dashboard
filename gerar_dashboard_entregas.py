@@ -8,11 +8,15 @@ from pathlib import Path
 
 import psycopg2
 
+from env_utils import load_env_file
+
+
+load_env_file()
 
 DEFAULT_HOST = "db.lwfiljyxrlahuhjddfnp.supabase.co"
 DEFAULT_DATABASE = "postgres"
 DEFAULT_USER = "readonly_user"
-DEFAULT_PASSWORD = "readonly123"
+DEFAULT_PASSWORD = os.getenv("AURA_DB_PASSWORD", "")
 DEFAULT_PORT = 5432
 DEFAULT_START_DATE = "2026-04-10"
 
