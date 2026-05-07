@@ -888,6 +888,9 @@ def build_page(df: pd.DataFrame) -> str:
         <div class="pill"><strong>Ultima entrega:</strong> {escape(ult_entrega) if ult_entrega else "--"}</div>
         <div class="pill"><strong>Gerado em:</strong> {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}</div>
       </div>
+      <div style="display:flex; justify-content:flex-end; margin-top: 12px;">
+        <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
+      </div>
     </div>
 
     <div class="kpis">
@@ -942,7 +945,6 @@ def build_page(df: pd.DataFrame) -> str:
           <h2>Detalhe do periodo</h2>
           <p id="detail-summary">{fmt_int(len(df))} linhas exibidas na tabela; o CSV completo sai em <code>CONTROLE_ENTREGAS_20D.csv</code>.</p>
         </div>
-        <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
       </div>
       {detail_table}
     </div>
