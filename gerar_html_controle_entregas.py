@@ -261,6 +261,17 @@ def make_line_chart(df: pd.DataFrame):
         marker=dict(color="#9bc7ff", line=dict(width=0)),
         hovertemplate="<b>%{x}</b><br>Pendente: %{y}<extra></extra>",
     )
+    for _, row in chart_df.iterrows():
+        total = int(row["Total"])
+        if total > 0:
+            fig.add_annotation(
+                x=row["DiaTxt"],
+                y=total,
+                text=fmt_int(total),
+                showarrow=False,
+                yshift=10,
+                font=dict(color="#ffffff", size=11, family="Segoe UI, Tahoma, Arial, sans-serif"),
+            )
     fig.update_layout(
         barmode="stack",
         template="plotly_dark",
