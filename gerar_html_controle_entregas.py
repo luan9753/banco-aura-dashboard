@@ -129,9 +129,9 @@ def _top_series(df: pd.DataFrame, col: str, label: str, limit: int = 8) -> pd.Da
     return out
 
 
-BLUE_PALETTE_DAY = ["#8fb8ff", "#7aa2ff", "#6796ff", "#5789ff", "#4f8cff", "#3f79f5"]
-BLUE_PALETTE_AGENT = ["#7aa2ff", "#6f9eff", "#6498ff", "#5b91ff", "#5289ff", "#487df1"]
-BLUE_PALETTE_UF = ["#9bc0ff", "#8fb8ff", "#82aeff", "#77a6ff", "#6d9dff", "#6293ff", "#5789ff", "#4c7fef"]
+BLUE_PALETTE_DAY = ["#c6dcff", "#b1d0ff", "#9bc0ff", "#86b2ff", "#73a4ff", "#5f95ff", "#4c87f0"]
+BLUE_PALETTE_AGENT = ["#7aa2ff", "#6e97ff", "#638dff", "#5681f7", "#4d76ea", "#436bdf"]
+BLUE_PALETTE_UF = ["#d8e7ff", "#c9dbff", "#b9ceff", "#a8c0ff", "#95b2ff", "#83a4ff", "#7095f0", "#5f87e4"]
 
 
 def make_bar_chart(
@@ -369,7 +369,7 @@ def build_page(df: pd.DataFrame) -> str:
         "#4f8cff",
         palette=BLUE_PALETTE_UF,
         orientation="h",
-        height=360,
+        height=540,
     )
 
     today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
