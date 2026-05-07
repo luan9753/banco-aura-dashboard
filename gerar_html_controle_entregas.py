@@ -501,6 +501,7 @@ def _csv_frame(df: pd.DataFrame) -> pd.DataFrame:
         "Logger",
         "Tipo Datalogger",
         "Agente",
+        "Motorista",
         "UF",
         "Data de Entrega",
         "Status Retorno",
@@ -548,6 +549,7 @@ def build_page(df: pd.DataFrame) -> str:
         "Pedido",
         "Logger",
         "Agente",
+        "Motorista",
         "UF",
         "Tipo Datalogger",
         "Status Retorno",
@@ -580,6 +582,7 @@ def build_page(df: pd.DataFrame) -> str:
         "Pedido": "Pedido",
         "Logger": "Logger",
         "DiaTxt": "DiaTxt",
+        "Motorista": "Motorista",
     })
     data_json = json.dumps(data_json_df.to_dict(orient="records"), ensure_ascii=False, default=str)
     day_labels = [d.strftime("%d/%m") for d in pd.date_range(start=today - pd.Timedelta(days=WINDOW_DAYS), end=today, freq="D")]
