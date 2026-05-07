@@ -158,7 +158,7 @@ def make_bar_chart(
         return fig
     chart_df = df.copy()
     if orientation == "h" and y in chart_df.columns:
-        chart_df = chart_df.sort_values(y, ascending=True)
+        chart_df = chart_df.sort_values(x, ascending=False)
     fig = px.bar(chart_df, x=x, y=y, title=title, color_discrete_sequence=[color], orientation=orientation)
     text_template = "%{x}" if orientation == "h" else "%{y}"
     trace_kwargs = dict(
@@ -170,7 +170,7 @@ def make_bar_chart(
     if orientation == "h":
         trace_kwargs["textposition"] = "inside"
         trace_kwargs["insidetextanchor"] = "middle"
-        trace_kwargs["textfont"] = dict(color="#ffffff")
+        trace_kwargs["textfont"] = dict(color="#000000")
     fig.update_traces(**trace_kwargs)
     fig.update_layout(
         template="plotly_dark",
@@ -180,7 +180,12 @@ def make_bar_chart(
         height=height,
         font=dict(color="#e5eefc"),
         xaxis=dict(gridcolor="#25304a"),
-        yaxis=dict(gridcolor="#25304a"),
+        yaxis=dict(
+            gridcolor="#25304a",
+            categoryorder="array" if orientation == "h" else "trace",
+            categoryarray=chart_df[y].tolist() if orientation == "h" else None,
+            autorange="reversed" if orientation == "h" else True,
+        ),
         title=dict(x=0.02, font=dict(size=15)),
         bargap=0.28,
     )
