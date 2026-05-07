@@ -168,7 +168,7 @@ def _agent_return_stack(df: pd.DataFrame, limit: int = 12) -> pd.DataFrame:
     agg["Total"] = agg["Retornado"] + agg["Pendente"]
     agg["PctRetornado"] = agg["Retornado"].where(agg["Total"].gt(0), 0) / agg["Total"].where(agg["Total"].gt(0), 1) * 100
     agg = agg.sort_values("Total", ascending=False).head(limit)
-    agg = agg.sort_values("Total", ascending=True).reset_index(drop=True)
+    agg = agg.reset_index(drop=True)
     return agg
 
 
@@ -414,15 +414,30 @@ def make_agent_return_chart(df: pd.DataFrame) -> go.Figure:
         cliponaxis=False,
         hovertemplate="<b>%{y}</b><br>Pendente: %{x}<extra></extra>",
     )
+    for _, row in chart_df.iterrows():
+        total = int(row["Total"])
+        if total > 0:
+            fig.add_annotation(
+                x=total,
+                y=row["Agente"],
+                text=fmt_int(total),
+                showarrow=False,
+                xshift=14,
+                font=dict(color="#e5eefc", size=11, family="Segoe UI, Tahoma, Arial, sans-serif"),
+            )
     fig.update_layout(
         barmode="stack",
         template="plotly_dark",
         paper_bgcolor="#0b1020",
         plot_bgcolor="#0b1020",
-        margin=dict(l=22, r=24, t=56, b=36),
+        margin=dict(l=22, r=44, t=56, b=36),
         height=620,
         font=dict(color="#e5eefc"),
-        xaxis=dict(gridcolor="#25304a", zeroline=False),
+        xaxis=dict(
+            gridcolor="#25304a",
+            zeroline=False,
+            range=[0, float(chart_df["Total"].max()) * 1.12 if not chart_df.empty else 1],
+        ),
         yaxis=dict(
             gridcolor="#25304a",
             categoryorder="array",
