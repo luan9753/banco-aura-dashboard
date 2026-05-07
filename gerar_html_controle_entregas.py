@@ -148,6 +148,30 @@ def _daily_return_stack(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _agent_return_stack(df: pd.DataFrame, limit: int = 12) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame(columns=["Agente", "Retornado", "Pendente", "Total", "PctRetornado"])
+
+    base = df.copy()
+    base["Agente"] = base["Agente"].fillna("").astype(str).str.strip()
+    base.loc[base["Agente"].eq(""), "Agente"] = "SEM AGENTE"
+    base["Status Retorno"] = base["Status Retorno"].fillna("").astype(str).str.strip()
+
+    agg = (
+        base.assign(
+            Retornado=base["Status Retorno"].eq("Retornado").astype(int),
+            Pendente=base["Status Retorno"].eq("Pendente de Retorno").astype(int),
+        )
+        .groupby("Agente", as_index=False)[["Retornado", "Pendente"]]
+        .sum()
+    )
+    agg["Total"] = agg["Retornado"] + agg["Pendente"]
+    agg["PctRetornado"] = agg["Retornado"].where(agg["Total"].gt(0), 0) / agg["Total"].where(agg["Total"].gt(0), 1) * 100
+    agg = agg.sort_values("Total", ascending=False).head(limit)
+    agg = agg.sort_values("Total", ascending=True).reset_index(drop=True)
+    return agg
+
+
 def _top_series(df: pd.DataFrame, col: str, label: str, limit: int = 8) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=[label, "Loggers"])
@@ -350,6 +374,75 @@ def make_rank_chart(
     return fig
 
 
+def make_agent_return_chart(df: pd.DataFrame) -> go.Figure:
+    if df.empty:
+        fig = go.Figure()
+        fig.add_annotation(
+            text="Sem dados para exibir",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+            font=dict(color="#cbd5e1", size=16),
+        )
+        fig.update_layout(template="plotly_dark", paper_bgcolor="#0b1020", plot_bgcolor="#0b1020")
+        return fig
+
+    chart_df = _agent_return_stack(df, limit=12)
+    fig = go.Figure()
+    fig.add_bar(
+        y=chart_df["Agente"],
+        x=chart_df["Retornado"],
+        orientation="h",
+        name="Retornado ao estoque",
+        marker=dict(color="#2f6fd6", line=dict(width=0)),
+        text=chart_df["PctRetornado"].map(lambda v: f"{v:.0f}%"),
+        textposition="inside",
+        insidetextanchor="middle",
+        textfont=dict(color="#ffffff"),
+        cliponaxis=False,
+        customdata=chart_df[["PctRetornado"]],
+        hovertemplate="<b>%{y}</b><br>Retornado: %{x}<br>% retornado: %{customdata[0]:.0f}%<extra></extra>",
+    )
+    fig.add_bar(
+        y=chart_df["Agente"],
+        x=chart_df["Pendente"],
+        orientation="h",
+        name="Pendente de retorno",
+        marker=dict(color="#9bc7ff", line=dict(width=0)),
+        cliponaxis=False,
+        hovertemplate="<b>%{y}</b><br>Pendente: %{x}<extra></extra>",
+    )
+    fig.update_layout(
+        barmode="stack",
+        template="plotly_dark",
+        paper_bgcolor="#0b1020",
+        plot_bgcolor="#0b1020",
+        margin=dict(l=22, r=24, t=56, b=36),
+        height=620,
+        font=dict(color="#e5eefc"),
+        xaxis=dict(gridcolor="#25304a", zeroline=False),
+        yaxis=dict(
+            gridcolor="#25304a",
+            categoryorder="array",
+            categoryarray=chart_df["Agente"].tolist(),
+            autorange="reversed",
+            automargin=True,
+        ),
+        title=dict(x=0.02, font=dict(size=15)),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0.0,
+        ),
+        bargap=0.25,
+    )
+    return fig
+
+
 def fig_div(fig) -> str:
     return pio.to_html(
         fig,
@@ -415,14 +508,7 @@ def build_page(df: pd.DataFrame) -> str:
             ult_entrega = ult_dt.strftime("%d/%m/%Y %H:%M:%S")
 
     daily_fig = make_line_chart(df)
-    top_agente_fig = make_rank_chart(
-        _top_series(df, "Agente", "Agente", limit=12),
-        "Agente",
-        "Loggers",
-        "Top agentes",
-        AGENT_COLOR,
-        height=540,
-    )
+    top_agente_fig = make_agent_return_chart(df)
     top_uf_fig = make_bar_chart(
         _top_series(df, "UF", "UF", limit=12),
         "Loggers",
