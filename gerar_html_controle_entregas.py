@@ -1369,8 +1369,22 @@ def build_page(df: pd.DataFrame) -> str:
         renderTables(rows);
       }}
 
+      let resizeTimer = null;
+      function resizeCharts() {{
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {{
+          ["chart-daily", "chart-agentes", "chart-ufs"].forEach(function(id) {{
+            const el = document.getElementById(id);
+            if (el) {{
+              Plotly.Plots.resize(el);
+            }}
+          }});
+        }}, 120);
+      }}
+
       setupFilters();
       renderAll();
+      window.addEventListener("resize", resizeCharts);
     </script>
   </div>
 </body>

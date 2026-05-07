@@ -310,7 +310,7 @@
       <div class="pill-row">
         <div class="pill"><strong>Janela:</strong> ultimos 20 dias</div>
         <div class="pill"><strong>Ultima entrega:</strong> 06/05/2026 18:57:00</div>
-        <div class="pill"><strong>Gerado em:</strong> 06/05/2026 22:17:28</div>
+        <div class="pill"><strong>Gerado em:</strong> 06/05/2026 22:19:34</div>
       </div>
     </div>
 
@@ -793,8 +793,22 @@
         renderTables(rows);
       }
 
+      let resizeTimer = null;
+      function resizeCharts() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+          ["chart-daily", "chart-agentes", "chart-ufs"].forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) {
+              Plotly.Plots.resize(el);
+            }
+          });
+        }, 120);
+      }
+
       setupFilters();
       renderAll();
+      window.addEventListener("resize", resizeCharts);
     </script>
   </div>
 </body>
