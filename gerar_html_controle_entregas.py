@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from html import escape
 from pathlib import Path
@@ -522,40 +523,56 @@ def build_page(df: pd.DataFrame) -> str:
         if pd.notna(ult_dt):
             ult_entrega = ult_dt.strftime("%d/%m/%Y %H:%M:%S")
 
-    daily_fig = make_line_chart(df)
-    top_agente_fig = make_agent_return_chart(df)
-    top_uf_fig = make_bar_chart(
-        _top_series(df, "UF", "UF", limit=12),
-        "Loggers",
-        "UF",
-        "Entregas por UF",
-        UF_COLOR,
-        orientation="h",
-        height=600,
-        show_text=True,
-    )
-
-    today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
-    yest_df = df[df["Dia"].eq(yesterday)].copy() if not df.empty else df.head(0).copy()
-    detail_cols = [
-        "Pedido",
-        "Logger",
-        "Tipo Datalogger",
-        "Agente",
-        "UF",
-        "Data de Entrega",
-        "Status Retorno",
-        "UF Destino",
-        "Cidade Destino",
-        "Destinatario",
-    ]
-
-    today_table, today_count = table_html(today_df, detail_cols, SECTION_TABLE_ROWS)
-    yest_table, yest_count = table_html(yest_df, detail_cols, SECTION_TABLE_ROWS)
-    detail_table, detail_count = table_html(df, detail_cols, TABLE_MAX_ROWS)
+    daily_fig = '<div id="chart-daily" class="chart-box"></div>'
+    top_agente_fig = '<div id="chart-agentes" class="chart-box"></div>'
+    top_uf_fig = '<div id="chart-ufs" class="chart-box"></div>'
+    today_table = '<div id="today-table" class="table-wrap"></div>'
+    yest_table = '<div id="yesterday-table" class="table-wrap"></div>'
+    detail_table = '<div id="detail-table" class="table-wrap"></div>'
 
     csv_frame = _csv_frame(df)
     csv_frame.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
+
+    data_cols = [
+        "Pedido",
+        "Logger",
+        "Agente",
+        "UF",
+        "Tipo Datalogger",
+        "Status Retorno",
+        "Data de Entrega",
+        "Ultimo_Historico",
+        "UF Destino",
+        "Cidade Destino",
+        "Destinatario",
+        "Dia",
+    ]
+    data_json_df = df.copy()
+    if "Dia" in data_json_df.columns:
+        data_json_df["DiaTxt"] = pd.to_datetime(data_json_df["Dia"], errors="coerce").dt.strftime("%d/%m").fillna("")
+    else:
+        data_json_df["DiaTxt"] = ""
+    for col in ["Data de Entrega", "Ultimo_Historico"]:
+        if col in data_json_df.columns:
+            data_json_df[col] = pd.to_datetime(data_json_df[col], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
+    data_json_df = data_json_df[[c for c in data_cols if c in data_json_df.columns] + ["DiaTxt"]].copy()
+    data_json_df = data_json_df.rename(columns={
+        "Tipo Datalogger": "TipoDatalogger",
+        "Status Retorno": "StatusRetorno",
+        "Data de Entrega": "DataEntrega",
+        "Ultimo_Historico": "UltimoHistorico",
+        "UF Destino": "UFDestino",
+        "Cidade Destino": "CidadeDestino",
+        "Destinatario": "Destinatario",
+        "Agente": "Agente",
+        "UF": "UF",
+        "Pedido": "Pedido",
+        "Logger": "Logger",
+        "DiaTxt": "DiaTxt",
+    })
+    data_json = json.dumps(data_json_df.to_dict(orient="records"), ensure_ascii=False, default=str)
+    day_labels = [d.strftime("%d/%m") for d in pd.date_range(start=today - pd.Timedelta(days=WINDOW_DAYS), end=today, freq="D")]
+    day_labels_json = json.dumps(day_labels, ensure_ascii=False)
 
     html = f"""<!doctype html>
 <html lang="pt-BR">
@@ -636,6 +653,38 @@ def build_page(df: pd.DataFrame) -> str:
       gap: 10px;
       margin-top: 16px;
     }}
+    .filter-row {{
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) auto;
+      gap: 12px;
+      margin-top: 16px;
+    }}
+    .filter-box {{
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }}
+    .filter-label {{
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }}
+    .filter-select {{
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(122,162,255,0.26);
+      background: rgba(9,14,25,0.92);
+      color: #e8eefb;
+      padding: 10px 12px;
+      font-size: 13px;
+      outline: none;
+    }}
+    .filter-select:focus {{
+      border-color: rgba(122,162,255,0.48);
+      box-shadow: 0 0 0 3px rgba(79,140,255,0.16);
+    }}
     .pill {{
       border: 1px solid rgba(148,163,184,0.22);
       border-radius: 999px;
@@ -704,6 +753,10 @@ def build_page(df: pd.DataFrame) -> str:
       font-weight: 800;
       margin: 2px 0 12px;
       color: #f6f8ff;
+    }}
+    .chart-box {{
+      min-height: 320px;
+      width: 100%;
     }}
     .section {{
       margin-top: 18px;
@@ -797,6 +850,7 @@ def build_page(df: pd.DataFrame) -> str:
     @media (max-width: 1280px) {{
       .kpis {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
       .grid2, .two-col {{ grid-template-columns: 1fr; }}
+      .filter-row {{ grid-template-columns: 1fr; }}
     }}
     @media (max-width: 720px) {{
       .wrap {{ padding: 14px 10px 24px; }}
@@ -815,6 +869,20 @@ def build_page(df: pd.DataFrame) -> str:
         A pagina destaca o que foi entregue hoje, ontem e no periodo completo, com tabela limitada na visualizacao
         e exportacao completa em CSV.
       </div>
+      <div class="filter-row">
+        <div class="filter-box">
+          <div class="filter-label">Filtro por AGENTE</div>
+          <select id="filter-agente" class="filter-select"></select>
+        </div>
+        <div class="filter-box">
+          <div class="filter-label">Filtro por UF</div>
+          <select id="filter-uf" class="filter-select"></select>
+        </div>
+        <div class="filter-box" style="justify-content:flex-end;">
+          <div class="filter-label">&nbsp;</div>
+          <button id="btn-clear-filters" class="btn" type="button">Limpar filtros</button>
+        </div>
+      </div>
       <div class="pill-row">
         <div class="pill"><strong>Janela:</strong> ultimos {WINDOW_DAYS} dias</div>
         <div class="pill"><strong>Ultima entrega:</strong> {escape(ult_entrega) if ult_entrega else "--"}</div>
@@ -823,27 +891,27 @@ def build_page(df: pd.DataFrame) -> str:
     </div>
 
     <div class="kpis">
-      <div class="kpi"><div class="label">Loggers no periodo</div><div class="value">{fmt_int(total_loggers)}</div><div class="foot">Entregas com data valida</div></div>
-      <div class="kpi"><div class="label">Entregues hoje</div><div class="value">{fmt_int(total_hoje)}</div><div class="foot">Data de entrega igual a hoje</div></div>
-      <div class="kpi"><div class="label">Entregues ontem</div><div class="value">{fmt_int(total_ontem)}</div><div class="foot">Referencia para o turno anterior</div></div>
-      <div class="kpi"><div class="label">Pedidos unicos</div><div class="value">{fmt_int(total_pedidos)}</div><div class="foot">Pedidos com logger entregue</div></div>
-      <div class="kpi"><div class="label">Agentes unicos</div><div class="value">{fmt_int(total_agentes)}</div><div class="foot">Responsaveis da entrega</div></div>
-      <div class="kpi"><div class="label">Retornados no periodo</div><div class="value">{fmt_int(total_retorno)}</div><div class="foot">Status Retorno = Retornado</div></div>
+      <div class="kpi"><div class="label">Loggers no periodo</div><div class="value" id="kpi-loggers">{fmt_int(total_loggers)}</div><div class="foot">Entregas com data valida</div></div>
+      <div class="kpi"><div class="label">Entregues hoje</div><div class="value" id="kpi-hoje">{fmt_int(total_hoje)}</div><div class="foot">Data de entrega igual a hoje</div></div>
+      <div class="kpi"><div class="label">Entregues ontem</div><div class="value" id="kpi-ontem">{fmt_int(total_ontem)}</div><div class="foot">Referencia para o turno anterior</div></div>
+      <div class="kpi"><div class="label">Pedidos unicos</div><div class="value" id="kpi-pedidos">{fmt_int(total_pedidos)}</div><div class="foot">Pedidos com logger entregue</div></div>
+      <div class="kpi"><div class="label">Agentes unicos</div><div class="value" id="kpi-agentes">{fmt_int(total_agentes)}</div><div class="foot">Responsaveis da entrega</div></div>
+      <div class="kpi"><div class="label">Retornados no periodo</div><div class="value" id="kpi-retornados">{fmt_int(total_retorno)}</div><div class="foot">Status Retorno = Retornado</div></div>
     </div>
 
     <div class="chart-stack">
       <div class="panel panel-wide">
         <div class="panel-title">Entregas por dia</div>
-        {fig_div(daily_fig)}
+        {daily_fig}
       </div>
       <div class="grid2">
         <div class="panel">
           <div class="panel-title">Top agentes</div>
-          {fig_div(top_agente_fig)}
+          {top_agente_fig}
         </div>
         <div class="panel">
           <div class="panel-title">Top UFs</div>
-          {fig_div(top_uf_fig)}
+          {top_uf_fig}
         </div>
       </div>
     </div>
@@ -852,36 +920,458 @@ def build_page(df: pd.DataFrame) -> str:
       <div class="section-head">
         <div>
           <h2>Entregas de hoje</h2>
-          <p>{fmt_int(today_count)} registro(s) encontrados para a data atual.</p>
+          <p id="today-summary">{fmt_int(total_hoje)} registro(s) encontrados para a data atual.</p>
         </div>
       </div>
-      <div class="table-wrap">{today_table}</div>
+      {today_table}
     </div>
 
     <div class="section">
       <div class="section-head">
         <div>
           <h2>Entregas de ontem</h2>
-          <p>{fmt_int(yest_count)} registro(s) encontrados para o dia anterior.</p>
+          <p id="yesterday-summary">{fmt_int(total_ontem)} registro(s) encontrados para o dia anterior.</p>
         </div>
       </div>
-      <div class="table-wrap">{yest_table}</div>
+      {yest_table}
     </div>
 
     <div class="section">
       <div class="section-head">
         <div>
           <h2>Detalhe do periodo</h2>
-          <p>{fmt_int(detail_count)} linhas exibidas na tabela; o CSV completo sai em <code>CONTROLE_ENTREGAS_20D.csv</code>.</p>
+          <p id="detail-summary">{fmt_int(len(df))} linhas exibidas na tabela; o CSV completo sai em <code>CONTROLE_ENTREGAS_20D.csv</code>.</p>
         </div>
         <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
       </div>
-      <div class="table-wrap">{detail_table}</div>
+      {detail_table}
     </div>
 
     <div class="footer">
       Fonte: snapshot_reversa/modelo_final.pkl. O recorte considera apenas loggers com data de entrega valida e janela dos ultimos {WINDOW_DAYS} dias.
     </div>
+    <script>
+      const RAW_DATA = {data_json};
+      const DAY_LABELS = {day_labels_json};
+      const TABLE_COLUMNS = [
+        {{ key: "Pedido", label: "Pedido" }},
+        {{ key: "Logger", label: "Logger" }},
+        {{ key: "TipoDatalogger", label: "Tipo Datalogger" }},
+        {{ key: "Agente", label: "Agente" }},
+        {{ key: "UF", label: "UF" }},
+        {{ key: "DataEntrega", label: "Data de Entrega" }},
+        {{ key: "StatusRetorno", label: "Status Retorno" }},
+        {{ key: "UFDestino", label: "UF Destino" }},
+        {{ key: "CidadeDestino", label: "Cidade Destino" }},
+        {{ key: "Destinatario", label: "Destinatario" }}
+      ];
+
+      const state = {{ agent: "", uf: "" }};
+      const els = {{
+        agent: document.getElementById("filter-agente"),
+        uf: document.getElementById("filter-uf"),
+        clear: document.getElementById("btn-clear-filters"),
+        kpiLoggers: document.getElementById("kpi-loggers"),
+        kpiHoje: document.getElementById("kpi-hoje"),
+        kpiOntem: document.getElementById("kpi-ontem"),
+        kpiPedidos: document.getElementById("kpi-pedidos"),
+        kpiAgentes: document.getElementById("kpi-agentes"),
+        kpiRetornados: document.getElementById("kpi-retornados"),
+        todaySummary: document.getElementById("today-summary"),
+        yesterdaySummary: document.getElementById("yesterday-summary"),
+        detailSummary: document.getElementById("detail-summary"),
+        todayTable: document.getElementById("today-table"),
+        yesterdayTable: document.getElementById("yesterday-table"),
+        detailTable: document.getElementById("detail-table")
+      }};
+
+      function clean(value) {{
+        return (value ?? "").toString().trim();
+      }}
+
+      function formatInt(value) {{
+        return new Intl.NumberFormat("pt-BR").format(Number(value) || 0);
+      }}
+
+      function escapeHtml(value) {{
+        return clean(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }}
+
+      function uniqueSorted(values) {{
+        return [...new Set(values.map(clean).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      }}
+
+      function parseBrDateTime(value) {{
+        const txt = clean(value);
+        if (!txt) return 0;
+        const parts = txt.split(" ");
+        const datePart = parts[0] || "";
+        const timePart = parts[1] || "00:00:00";
+        const d = datePart.split("/");
+        const t = timePart.split(":");
+        if (d.length !== 3) return 0;
+        const day = parseInt(d[0], 10) || 1;
+        const month = (parseInt(d[1], 10) || 1) - 1;
+        const year = parseInt(d[2], 10) || 1970;
+        const hour = parseInt(t[0], 10) || 0;
+        const minute = parseInt(t[1], 10) || 0;
+        const second = parseInt(t[2], 10) || 0;
+        return new Date(year, month, day, hour, minute, second).getTime();
+      }}
+
+      function cloneRow(row) {{
+        return Object.assign({{}}, row);
+      }}
+
+      function filterRows() {{
+        return RAW_DATA.filter(function(row) {{
+          const agentOk = !state.agent || clean(row.Agente) === state.agent;
+          const ufOk = !state.uf || clean(row.UF) === state.uf;
+          return agentOk && ufOk;
+        }});
+      }}
+
+      function setupFilters() {{
+        const agents = uniqueSorted(RAW_DATA.map((r) => r.Agente));
+        const ufs = uniqueSorted(RAW_DATA.map((r) => r.UF));
+
+        let agentHtml = '<option value="">Todos os agentes</option>';
+        agents.forEach(function(item) {{
+          agentHtml += '<option value="' + escapeHtml(item) + '">' + escapeHtml(item) + '</option>';
+        }});
+        els.agent.innerHTML = agentHtml;
+
+        let ufHtml = '<option value="">Todas as UFs</option>';
+        ufs.forEach(function(item) {{
+          ufHtml += '<option value="' + escapeHtml(item) + '">' + escapeHtml(item) + '</option>';
+        }});
+        els.uf.innerHTML = ufHtml;
+
+        els.agent.addEventListener("change", function(ev) {{
+          state.agent = ev.target.value;
+          renderAll();
+        }});
+        els.uf.addEventListener("change", function(ev) {{
+          state.uf = ev.target.value;
+          renderAll();
+        }});
+        els.clear.addEventListener("click", function() {{
+          state.agent = "";
+          state.uf = "";
+          els.agent.value = "";
+          els.uf.value = "";
+          renderAll();
+        }});
+      }}
+
+      function countUnique(rows, key) {{
+        return new Set(rows.map((row) => clean(row[key])).filter(Boolean)).size;
+      }}
+
+      function countByStatus(rows, status) {{
+        return new Set(rows.filter((row) => clean(row.StatusRetorno) === status).map((row) => clean(row.Logger)).filter(Boolean)).size;
+      }}
+
+      function countUniqueByDate(rows, targetDate) {{
+        return new Set(
+          rows
+            .filter(function(row) {{ return clean(row.DataEntrega).startsWith(targetDate); }})
+            .map(function(row) {{ return clean(row.Logger); }})
+            .filter(Boolean)
+        ).size;
+      }}
+
+      function todayKey() {{
+        return new Date().toLocaleDateString("pt-BR");
+      }}
+
+      function yesterdayKey() {{
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        return d.toLocaleDateString("pt-BR");
+      }}
+
+      function buildDailySeries(rows) {{
+        const buckets = Object.fromEntries(DAY_LABELS.map((day) => [day, {{ ret: new Set(), pend: new Set() }}]));
+        rows.forEach(function(row) {{
+          const day = clean(row.DiaTxt);
+          const logger = clean(row.Logger);
+          if (!buckets[day] || !logger) return;
+          if (clean(row.StatusRetorno) === "Retornado") buckets[day].ret.add(logger);
+          if (clean(row.StatusRetorno) === "Pendente de Retorno") buckets[day].pend.add(logger);
+        }});
+        return DAY_LABELS.map(function(day) {{
+          const ret = buckets[day].ret.size;
+          const pend = buckets[day].pend.size;
+          const total = ret + pend;
+          return {{
+            day: day,
+            ret: ret,
+            pend: pend,
+            total: total,
+            pct: total > 0 ? (ret / total) * 100 : 0
+          }};
+        }});
+      }}
+
+      function buildAgentSeries(rows) {{
+        const map = new Map();
+        rows.forEach(function(row) {{
+          const agent = clean(row.Agente) || "SEM AGENTE";
+          const logger = clean(row.Logger);
+          if (!logger) return;
+          if (!map.has(agent)) map.set(agent, {{ ret: new Set(), pend: new Set() }});
+          const bucket = map.get(agent);
+          const status = clean(row.StatusRetorno);
+          if (status === "Retornado") bucket.ret.add(logger);
+          if (status === "Pendente de Retorno") bucket.pend.add(logger);
+        }});
+        const arr = Array.from(map.entries()).map(function(entry) {{
+          const agent = entry[0];
+          const bucket = entry[1];
+          const ret = bucket.ret.size;
+          const pend = bucket.pend.size;
+          const total = ret + pend;
+          return {{ agent: agent, ret: ret, pend: pend, total: total, pct: total > 0 ? (ret / total) * 100 : 0 }};
+        }});
+        arr.sort(function(a, b) {{ return b.total - a.total; }});
+        return arr.slice(0, 12).sort(function(a, b) {{ return a.total - b.total; }});
+      }}
+
+      function buildUfSeries(rows) {{
+        const map = new Map();
+        rows.forEach(function(row) {{
+          const uf = clean(row.UF) || "SEM UF";
+          const logger = clean(row.Logger);
+          if (!logger) return;
+          if (!map.has(uf)) map.set(uf, {{ total: new Set() }});
+          map.get(uf).total.add(logger);
+        }});
+        const arr = Array.from(map.entries()).map(function(entry) {{
+          return {{ uf: entry[0], total: entry[1].total.size }};
+        }});
+        arr.sort(function(a, b) {{ return b.total - a.total; }});
+        return arr.slice(0, 12).sort(function(a, b) {{ return a.total - b.total; }});
+      }}
+
+      function renderKpis(rows) {{
+        const loggers = countUnique(rows, "Logger");
+        const pedidos = countUnique(rows, "Pedido");
+        const agentes = countUnique(rows, "Agente");
+        const retornados = countByStatus(rows, "Retornado");
+        const hoje = countUniqueByDate(rows, todayKey());
+        const ontem = countUniqueByDate(rows, yesterdayKey());
+
+        els.kpiLoggers.textContent = formatInt(loggers);
+        els.kpiHoje.textContent = formatInt(hoje);
+        els.kpiOntem.textContent = formatInt(ontem);
+        els.kpiPedidos.textContent = formatInt(pedidos);
+        els.kpiAgentes.textContent = formatInt(agentes);
+        els.kpiRetornados.textContent = formatInt(retornados);
+
+        els.todaySummary.textContent = formatInt(hoje) + " registro(s) encontrados para a data atual.";
+        els.yesterdaySummary.textContent = formatInt(ontem) + " registro(s) encontrados para o dia anterior.";
+        els.detailSummary.innerHTML = formatInt(rows.length) + ' linhas exibidas na tabela; o CSV completo sai em <code>CONTROLE_ENTREGAS_20D.csv</code>.';
+      }}
+
+      function renderDailyChart(rows) {{
+        const series = buildDailySeries(rows);
+        const traceRet = {{
+          x: series.map((d) => d.day),
+          y: series.map((d) => d.ret),
+          type: "bar",
+          name: "Retornado ao estoque",
+          marker: {{ color: "#2f6fd6" }},
+          text: series.map((d) => d.ret > 0 ? Math.round(d.pct) + "%" : ""),
+          textposition: "inside",
+          insidetextanchor: "middle",
+          textfont: {{ color: "#ffffff", size: 15 }},
+          cliponaxis: false,
+          customdata: series.map((d) => [d.pct]),
+          hovertemplate: "<b>%{{x}}</b><br>Retornado: %{{y}}<br>% retornado: %{{customdata[0]:.0f}}%<extra></extra>"
+        }};
+        const tracePend = {{
+          x: series.map((d) => d.day),
+          y: series.map((d) => d.pend),
+          type: "bar",
+          name: "Pendente de retorno",
+          marker: {{ color: "#9bc7ff" }},
+          cliponaxis: false,
+          hovertemplate: "<b>%{{x}}</b><br>Pendente: %{{y}}<extra></extra>"
+        }};
+        const annotations = series
+          .filter((d) => d.total > 0)
+          .map((d) => ({{ x: d.day, y: d.total, text: formatInt(d.total), showarrow: false, yshift: 10, font: {{ color: "#ffffff", size: 13 }} }}));
+        Plotly.react("chart-daily", [traceRet, tracePend], {{
+          barmode: "stack",
+          template: "plotly_dark",
+          paper_bgcolor: "#0b1020",
+          plot_bgcolor: "#0b1020",
+          margin: {{ l: 24, r: 20, t: 52, b: 52 }},
+          height: 390,
+          font: {{ color: "#e5eefc" }},
+          xaxis: {{ gridcolor: "#25304a", tickfont: {{ size: 11 }}, automargin: true }},
+          yaxis: {{ gridcolor: "#25304a", showticklabels: false, ticks: "", zeroline: false }},
+          title: {{ x: 0.02, font: {{ size: 15 }} }},
+          bargap: 0.22,
+          legend: {{
+            orientation: "h",
+            yanchor: "bottom",
+            y: 1.02,
+            xanchor: "left",
+            x: 0.0
+          }},
+          annotations: annotations
+        }}, {{ displayModeBar: false, responsive: true }});
+      }}
+
+      function renderAgentChart(rows) {{
+        const series = buildAgentSeries(rows);
+        const traceRet = {{
+          y: series.map((d) => d.agent),
+          x: series.map((d) => d.ret),
+          orientation: "h",
+          type: "bar",
+          name: "Retornado ao estoque",
+          marker: {{ color: "#2f6fd6" }},
+          text: series.map((d) => d.ret > 0 ? Math.round(d.pct) + "%" : ""),
+          textposition: "inside",
+          insidetextanchor: "middle",
+          textfont: {{ color: "#ffffff", size: 15 }},
+          cliponaxis: false,
+          customdata: series.map((d) => [d.pct]),
+          hovertemplate: "<b>%{{y}}</b><br>Retornado: %{{x}}<br>% retornado: %{{customdata[0]:.0f}}%<extra></extra>"
+        }};
+        const tracePend = {{
+          y: series.map((d) => d.agent),
+          x: series.map((d) => d.pend),
+          orientation: "h",
+          type: "bar",
+          name: "Pendente de retorno",
+          marker: {{ color: "#9bc7ff" }},
+          cliponaxis: false,
+          hovertemplate: "<b>%{{y}}</b><br>Pendente: %{{x}}<extra></extra>"
+        }};
+        const maxTotal = series.length ? Math.max.apply(null, series.map((d) => d.total)) : 1;
+        const annotations = series
+          .filter((d) => d.total > 0)
+          .map((d) => ({{ x: d.total, y: d.agent, text: formatInt(d.total), showarrow: false, xshift: 14, font: {{ color: "#e5eefc", size: 13 }} }}));
+        Plotly.react("chart-agentes", [traceRet, tracePend], {{
+          barmode: "stack",
+          template: "plotly_dark",
+          paper_bgcolor: "#0b1020",
+          plot_bgcolor: "#0b1020",
+          margin: {{ l: 22, r: 44, t: 56, b: 36 }},
+          height: 620,
+          font: {{ color: "#e5eefc" }},
+          xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] }},
+          yaxis: {{
+            gridcolor: "#25304a",
+            automargin: true,
+            categoryorder: "array",
+            categoryarray: series.map((d) => d.agent),
+            autorange: "reversed"
+          }},
+          title: {{ x: 0.02, font: {{ size: 15 }} }},
+          legend: {{
+            orientation: "h",
+            yanchor: "bottom",
+            y: 1.02,
+            xanchor: "left",
+            x: 0.0
+          }},
+          bargap: 0.25,
+          annotations: annotations
+        }}, {{ displayModeBar: false, responsive: true }});
+      }}
+
+      function renderUfChart(rows) {{
+        const series = buildUfSeries(rows);
+        const maxTotal = series.length ? Math.max.apply(null, series.map((d) => d.total)) : 1;
+        const trace = {{
+          y: series.map((d) => d.uf),
+          x: series.map((d) => d.total),
+          orientation: "h",
+          type: "bar",
+          name: "Loggers",
+          marker: {{ color: "#9bc7ff" }},
+          cliponaxis: false,
+          hovertemplate: "<b>%{{y}}</b><br>Loggers: %{{x}}<extra></extra>"
+        }};
+        const annotations = series
+          .filter((d) => d.total > 0)
+          .map((d) => ({{ x: d.total, y: d.uf, text: formatInt(d.total), showarrow: false, xshift: 14, font: {{ color: "#e5eefc", size: 13 }} }}));
+        Plotly.react("chart-ufs", [trace], {{
+          template: "plotly_dark",
+          paper_bgcolor: "#0b1020",
+          plot_bgcolor: "#0b1020",
+          margin: {{ l: 22, r: 44, t: 56, b: 36 }},
+          height: 620,
+          font: {{ color: "#e5eefc" }},
+          xaxis: {{ gridcolor: "#25304a", zeroline: false, showticklabels: false, range: [0, maxTotal * 1.15] }},
+          yaxis: {{
+            gridcolor: "#25304a",
+            automargin: true,
+            categoryorder: "array",
+            categoryarray: series.map((d) => d.uf),
+            autorange: "reversed"
+          }},
+          title: {{ x: 0.02, font: {{ size: 15 }} }},
+          showlegend: false,
+          bargap: 0.22,
+          annotations: annotations
+        }}, {{ displayModeBar: false, responsive: true }});
+      }}
+
+      function renderTable(container, rows) {{
+        if (!rows.length) {{
+          container.innerHTML = '<div class="empty-box">Sem registros neste recorte.</div>';
+          return;
+        }}
+        const view = rows.slice().sort(function(a, b) {{ return parseBrDateTime(b.DataEntrega) - parseBrDateTime(a.DataEntrega); }});
+        let html = '<table class="data-table"><thead><tr>';
+        TABLE_COLUMNS.forEach(function(col) {{
+          html += '<th>' + col.label + '</th>';
+        }});
+        html += '</tr></thead><tbody>';
+        view.forEach(function(row) {{
+          html += '<tr>';
+          TABLE_COLUMNS.forEach(function(col) {{
+            html += '<td>' + escapeHtml(row[col.key] || "") + '</td>';
+          }});
+          html += '</tr>';
+        }});
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }}
+
+      function renderTables(rows) {{
+        const today = todayKey();
+        const yesterday = yesterdayKey();
+        const todayRows = rows.filter(function(row) {{ return clean(row.DataEntrega).startsWith(today); }});
+        const yesterdayRows = rows.filter(function(row) {{ return clean(row.DataEntrega).startsWith(yesterday); }});
+        renderTable(els.todayTable, todayRows.slice(0, {SECTION_TABLE_ROWS}));
+        renderTable(els.yesterdayTable, yesterdayRows.slice(0, {SECTION_TABLE_ROWS}));
+        renderTable(els.detailTable, rows.slice(0, {TABLE_MAX_ROWS}));
+      }}
+
+      function renderAll() {{
+        const rows = filterRows();
+        renderKpis(rows);
+        renderDailyChart(rows);
+        renderAgentChart(rows);
+        renderUfChart(rows);
+        renderTables(rows);
+      }}
+
+      setupFilters();
+      renderAll();
+    </script>
   </div>
 </body>
 </html>"""
