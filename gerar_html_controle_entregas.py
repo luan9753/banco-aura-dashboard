@@ -129,7 +129,21 @@ def _top_series(df: pd.DataFrame, col: str, label: str, limit: int = 8) -> pd.Da
     return out
 
 
-def make_bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = "#7aa2ff"):
+BLUE_PALETTE_DAY = ["#8fb8ff", "#7aa2ff", "#6796ff", "#5789ff", "#4f8cff", "#3f79f5"]
+BLUE_PALETTE_AGENT = ["#7aa2ff", "#6f9eff", "#6498ff", "#5b91ff", "#5289ff", "#487df1"]
+BLUE_PALETTE_UF = ["#9bc0ff", "#8fb8ff", "#82aeff", "#77a6ff", "#6d9dff", "#6293ff", "#5789ff", "#4c7fef"]
+
+
+def make_bar_chart(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    title: str,
+    color: str = "#7aa2ff",
+    palette: list[str] | None = None,
+    orientation: str = "v",
+    height: int = 320,
+):
     if df.empty:
         fig = px.bar(title=title)
         fig.add_annotation(
@@ -143,10 +157,14 @@ def make_bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = "#
         )
         fig.update_layout(template="plotly_dark", paper_bgcolor="#0b1020", plot_bgcolor="#0b1020")
         return fig
-    fig = px.bar(df, x=x, y=y, title=title, color_discrete_sequence=[color])
+    fig = px.bar(df, x=x, y=y, title=title, color_discrete_sequence=[color], orientation=orientation)
+    if palette:
+        colors = [palette[i % len(palette)] for i in range(len(df))]
+        fig.update_traces(marker_color=colors)
+    text_template = "%{x}" if orientation == "h" else "%{y}"
     fig.update_traces(
         cliponaxis=False,
-        texttemplate="%{y}",
+        texttemplate=text_template,
         textposition="outside",
         marker_line_width=0,
     )
@@ -155,7 +173,7 @@ def make_bar_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str = "#
         paper_bgcolor="#0b1020",
         plot_bgcolor="#0b1020",
         margin=dict(l=20, r=20, t=52, b=48),
-        height=320,
+        height=height,
         font=dict(color="#e5eefc"),
         xaxis=dict(gridcolor="#25304a"),
         yaxis=dict(gridcolor="#25304a"),
@@ -203,7 +221,15 @@ def make_line_chart(df: pd.DataFrame):
     return fig
 
 
-def make_rank_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str, height: int = 430):
+def make_rank_chart(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    title: str,
+    color: str,
+    height: int = 430,
+    palette: list[str] | None = None,
+):
     if df.empty:
         fig = px.bar(title=title)
         fig.add_annotation(
@@ -226,6 +252,9 @@ def make_rank_chart(df: pd.DataFrame, x: str, y: str, title: str, color: str, he
         title=title,
         color_discrete_sequence=[color],
     )
+    if palette:
+        colors = [palette[i % len(palette)] for i in range(len(chart_df))]
+        fig.update_traces(marker_color=colors)
     fig.update_traces(
         cliponaxis=False,
         texttemplate="%{x}",
@@ -313,7 +342,16 @@ def build_page(df: pd.DataFrame) -> str:
         if pd.notna(ult_dt):
             ult_entrega = ult_dt.strftime("%d/%m/%Y %H:%M:%S")
 
-    daily_fig = make_line_chart(df)
+    daily_fig = make_bar_chart(
+        _series_by_day(df).assign(Dia=lambda d: d["Dia"].dt.strftime("%d/%m")),
+        "Dia",
+        "Loggers",
+        "Entregas por dia",
+        "#7aa2ff",
+        palette=BLUE_PALETTE_DAY,
+        orientation="v",
+        height=380,
+    )
     top_agente_fig = make_rank_chart(
         _top_series(df, "Agente", "Agente", limit=12),
         "Agente",
@@ -321,8 +359,18 @@ def build_page(df: pd.DataFrame) -> str:
         "Top agentes",
         "#7aa2ff",
         height=540,
+        palette=BLUE_PALETTE_AGENT,
     )
-    top_uf_fig = make_bar_chart(_top_series(df, "UF", "UF"), "UF", "Loggers", "Entregas por UF", "#4f8cff")
+    top_uf_fig = make_bar_chart(
+        _top_series(df, "UF", "UF"),
+        "Loggers",
+        "UF",
+        "Entregas por UF",
+        "#4f8cff",
+        palette=BLUE_PALETTE_UF,
+        orientation="h",
+        height=360,
+    )
 
     today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
     yest_df = df[df["Dia"].eq(yesterday)].copy() if not df.empty else df.head(0).copy()
