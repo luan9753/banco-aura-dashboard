@@ -203,7 +203,7 @@ def make_bar_chart(
         trace_kwargs["textposition"] = "outside"
         if orientation == "h":
             trace_kwargs["textposition"] = "inside"
-            trace_kwargs["insidetextanchor"] = "middle"
+            trace_kwargs["insidetextanchor"] = "end"
             trace_kwargs["textfont"] = dict(color="#000000")
     fig.update_traces(**trace_kwargs)
     fig.update_layout(
@@ -431,7 +431,7 @@ def build_page(df: pd.DataFrame) -> str:
         UF_COLOR,
         orientation="h",
         height=600,
-        show_text=False,
+        show_text=True,
     )
 
     today_df = df[df["Dia"].eq(today)].copy() if not df.empty else df.head(0).copy()
