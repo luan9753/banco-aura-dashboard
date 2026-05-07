@@ -78,6 +78,16 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     cutoff = today - pd.Timedelta(days=WINDOW_DAYS)
     out = out[out["Data de Entrega"] >= cutoff].copy()
 
+    out["_UltimoHistoricoDT"] = pd.to_datetime(out["Ultimo_Historico"], errors="coerce")
+    out = (
+        out.sort_values(
+            ["Data de Entrega", "_UltimoHistoricoDT", "Pedido", "Logger"],
+            ascending=[False, False, True, True],
+        )
+        .drop_duplicates(subset=["Pedido", "Logger"], keep="first")
+        .copy()
+    )
+
     out["Dia"] = out["Data de Entrega"].dt.normalize()
     out["_data_entrega_txt"] = out["Data de Entrega"].dt.strftime("%d/%m/%Y %H:%M:%S")
     out["_dia_txt"] = out["Dia"].dt.strftime("%d/%m/%Y")
@@ -98,6 +108,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
         out["Status Retorno"] = out["Status Retorno"].replace("", "SEM STATUS")
 
     out = out.sort_values(["Data de Entrega", "Logger"], ascending=[False, True]).reset_index(drop=True)
+    out = out.drop(columns=["_UltimoHistoricoDT"], errors="ignore")
     return out
 
 
