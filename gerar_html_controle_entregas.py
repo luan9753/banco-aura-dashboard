@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 from datetime import datetime
 from html import escape
@@ -9,6 +10,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
+
+from env_utils import load_env_file
 
 
 WORKSPACE = Path(__file__).resolve().parent
@@ -20,6 +25,17 @@ OUTPUT_CSV = WORKSPACE / "CONTROLE_ENTREGAS_20D.csv"
 WINDOW_DAYS = 20
 TABLE_MAX_ROWS = 50
 SECTION_TABLE_ROWS = 25
+SLA_START = pd.Timestamp("2026-04-09")
+
+load_env_file()
+
+PG_CFG = {
+    "host": os.getenv("AURA_POSTGRES_HOST", "10.141.0.32"),
+    "port": int(os.getenv("AURA_POSTGRES_PORT", "5432")),
+    "database": os.getenv("AURA_POSTGRES_NAME", "dtbPortal"),
+    "user": os.getenv("AURA_POSTGRES_USER", "bi_qualidade"),
+    "password": os.getenv("AURA_POSTGRES_PASSWORD", ""),
+}
 
 
 def fmt_int(value: int) -> str:
@@ -43,6 +59,27 @@ def load_data() -> pd.DataFrame:
         )
     df = pd.read_pickle(MODEL_FILE).copy()
     return df
+
+
+def _build_pg_url() -> URL:
+    return URL.create(
+        "postgresql+psycopg2",
+        username=PG_CFG["user"],
+        password=PG_CFG["password"],
+        host=PG_CFG["host"],
+        port=PG_CFG["port"],
+        database=PG_CFG["database"],
+    )
+
+
+def _read_pg(sql: str, params: dict | None = None) -> pd.DataFrame:
+    engine = create_engine(
+        _build_pg_url(),
+        pool_pre_ping=True,
+        connect_args={"options": "-c statement_timeout=60000"},
+    )
+    with engine.connect() as conn:
+        return pd.read_sql(text(sql), conn, params=params)
 
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -110,6 +147,288 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     out = out.sort_values(["Data de Entrega", "Logger"], ascending=[False, True]).reset_index(drop=True)
     out = out.drop(columns=["_UltimoHistoricoDT"], errors="ignore")
     return out
+
+
+def prepare_sla_deliveries(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+
+    required = [
+        "Logger",
+        "Pedido",
+        "Agente",
+        "Motorista",
+        "UF",
+        "Data de Entrega",
+        "Tipo Datalogger",
+        "Status Retorno",
+    ]
+    for col in required:
+        if col not in out.columns:
+            out[col] = ""
+
+    for col in ["Logger", "Pedido", "Agente", "Motorista", "UF", "Tipo Datalogger", "Status Retorno"]:
+        out[col] = clean_text(out[col])
+
+    for col in ["UF Destino", "Cidade Destino", "Destinatario", "Ultimo_Historico"]:
+        if col not in out.columns:
+            out[col] = ""
+
+    out["Data de Entrega"] = pd.to_datetime(out["Data de Entrega"], errors="coerce")
+    out = out[out["Logger"].ne("")].copy()
+    out = out[out["Data de Entrega"].notna()].copy()
+    out = out[out["Data de Entrega"] >= SLA_START].copy()
+
+    out["_UltimoHistoricoDT"] = pd.to_datetime(out["Ultimo_Historico"], errors="coerce")
+    out = out.sort_values(
+        ["Logger", "Data de Entrega", "_UltimoHistoricoDT", "Pedido"],
+        ascending=[True, True, False, True],
+    ).copy()
+    dedupe_cols = [
+        col
+        for col in [
+            "Pedido",
+            "Logger",
+            "Agente",
+            "Motorista",
+            "UF",
+            "Data de Entrega",
+            "Tipo Datalogger",
+            "Status Retorno",
+            "Ultimo_Historico",
+            "UF Destino",
+            "Cidade Destino",
+            "Destinatario",
+        ]
+        if col in out.columns
+    ]
+    out = out.drop_duplicates(subset=dedupe_cols, keep="first").copy()
+
+    out["DiaEntrega"] = out["Data de Entrega"].dt.normalize()
+    out = out.sort_values(["Logger", "Data de Entrega", "Pedido"], ascending=[True, True, True]).reset_index(drop=True)
+    out = out.drop(columns=["_UltimoHistoricoDT"], errors="ignore")
+    return out
+
+
+def load_sla_returns() -> pd.DataFrame:
+    sql = """
+    SELECT
+        upper(trim(d.ds_tag)) AS Logger,
+        dh.dt_inclusao AS dt_retorno
+    FROM public.tbddataloggerhistoricos dh
+    INNER JOIN vwtipos tam
+        ON ds_tipo = 'tipoacaomovimentacao' AND dh.tp_acaomovimentacao = tam.id
+    INNER JOIN public.tbdcaddataloggerdestinos dd
+        ON dh.id_destino = dd.id_destino
+    INNER JOIN public.tbdcaddataloggerfinalidades df
+        ON dh.id_finalidade = df.id_finalidade
+    INNER JOIN tbdcaddataloggers d
+        ON dh.id_datalogger = d.id_datalogger
+    WHERE dh.dt_inclusao >= :cutoff
+      AND (lower(tam.text) LIKE '%receb%' OR lower(tam.text) LIKE '%restaur%')
+      AND upper(trim(dd.ds_destino)) = 'EM ESTOQUE'
+      AND upper(trim(df.ds_finalidade)) IN ('SALDO ESTOQUE', 'SALDO DE ESTOQUE')
+    """
+    try:
+        df = _read_pg(sql, {"cutoff": SLA_START.to_pydatetime()})
+    except Exception:
+        return pd.DataFrame(columns=["Logger", "dt_retorno"])
+
+    if df.empty:
+        return pd.DataFrame(columns=["Logger", "dt_retorno"])
+
+    df["Logger"] = clean_text(df["Logger"]).str.upper()
+    df["dt_retorno"] = pd.to_datetime(df["dt_retorno"], errors="coerce")
+    df = df[df["Logger"].ne("") & df["dt_retorno"].notna()].copy()
+    df = df.sort_values(["Logger", "dt_retorno"], ascending=[True, True]).reset_index(drop=True)
+    return df
+
+
+def build_sla_pairs(deliveries: pd.DataFrame, returns: pd.DataFrame) -> pd.DataFrame:
+    if deliveries.empty:
+        return pd.DataFrame(columns=[
+            "Pedido", "Logger", "Agente", "Motorista", "UF", "Data de Entrega",
+            "Data de Retorno", "SLA Horas", "SLA Dias", "Status SLA"
+        ])
+
+    deliv = deliveries.copy()
+    deliv["Logger"] = clean_text(deliv["Logger"]).str.upper()
+    deliv["Pedido"] = clean_text(deliv["Pedido"])
+    deliv["Data de Entrega"] = pd.to_datetime(deliv["Data de Entrega"], errors="coerce")
+    deliv = deliv[deliv["Logger"].ne("") & deliv["Data de Entrega"].notna()].copy()
+    deliv = deliv.sort_values(["Logger", "Data de Entrega", "Pedido"], ascending=[True, True, True]).reset_index(drop=True)
+
+    ret_map: dict[str, list[pd.Timestamp]] = {}
+    if not returns.empty:
+        ret_base = returns.copy()
+        ret_base["Logger"] = clean_text(ret_base["Logger"]).str.upper()
+        ret_base["dt_retorno"] = pd.to_datetime(ret_base["dt_retorno"], errors="coerce")
+        ret_base = ret_base[ret_base["Logger"].ne("") & ret_base["dt_retorno"].notna()].copy()
+        ret_base = ret_base.sort_values(["Logger", "dt_retorno"], ascending=[True, True])
+        ret_map = ret_base.groupby("Logger")["dt_retorno"].apply(list).to_dict()
+
+    rows = []
+    for logger, grp in deliv.groupby("Logger", sort=False):
+        retorno_list = ret_map.get(logger, [])
+        r_idx = 0
+        for _, row in grp.iterrows():
+            entrega = row["Data de Entrega"]
+            while r_idx < len(retorno_list) and retorno_list[r_idx] <= entrega:
+                r_idx += 1
+            retorno = retorno_list[r_idx] if r_idx < len(retorno_list) else pd.NaT
+            if pd.notna(retorno):
+                sla_hours = (retorno - entrega).total_seconds() / 3600
+                rows.append({
+                    "Pedido": row.get("Pedido", ""),
+                    "Logger": logger,
+                    "Agente": row.get("Agente", ""),
+                    "Motorista": row.get("Motorista", ""),
+                    "UF": row.get("UF", ""),
+                    "Data de Entrega": entrega,
+                    "Data de Retorno": retorno,
+                    "SLA Horas": sla_hours,
+                    "SLA Dias": sla_hours / 24,
+                    "Status SLA": "Retornado",
+                })
+                r_idx += 1
+            else:
+                rows.append({
+                    "Pedido": row.get("Pedido", ""),
+                    "Logger": logger,
+                    "Agente": row.get("Agente", ""),
+                    "Motorista": row.get("Motorista", ""),
+                    "UF": row.get("UF", ""),
+                    "Data de Entrega": entrega,
+                    "Data de Retorno": pd.NaT,
+                    "SLA Horas": None,
+                    "SLA Dias": None,
+                    "Status SLA": "Pendente",
+                })
+
+    out = pd.DataFrame(rows)
+    if out.empty:
+        return out
+    out["DiaEntrega"] = pd.to_datetime(out["Data de Entrega"], errors="coerce").dt.normalize()
+    out = out.sort_values(["Data de Entrega", "Logger", "Pedido"], ascending=[False, True, True]).reset_index(drop=True)
+    return out
+
+
+def fmt_duration_hours(hours: float) -> str:
+    if pd.isna(hours):
+        return "--"
+    total_minutes = int(round(float(hours) * 60))
+    days, rem = divmod(total_minutes, 24 * 60)
+    hrs, mins = divmod(rem, 60)
+    parts = []
+    if days:
+        parts.append(f"{days}d")
+    if hrs:
+        parts.append(f"{hrs}h")
+    if mins or not parts:
+        parts.append(f"{mins}m")
+    return " ".join(parts)
+
+
+def build_sla_section() -> str:
+    try:
+        deliveries_raw = load_data()
+        deliveries = prepare_sla_deliveries(deliveries_raw)
+        returns = load_sla_returns()
+        pairs = build_sla_pairs(deliveries, returns)
+    except Exception as exc:
+        msg = escape(f"Não foi possível montar o SLA de retorno agora: {type(exc).__name__}")
+        return f"""
+        <div class="section">
+          <div class="section-head">
+            <div>
+              <h2>SLA de Retorno</h2>
+              <p>Base desde 09/04/2026</p>
+            </div>
+          </div>
+          <div class="empty-box">{msg}</div>
+        </div>
+        """
+
+    total = len(pairs)
+    retornados = int((pairs["Status SLA"] == "Retornado").sum()) if not pairs.empty else 0
+    pendentes = total - retornados
+    avg_hours = float(pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"].mean()) if retornados else float("nan")
+    median_hours = float(pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"].median()) if retornados else float("nan")
+    pct_24 = float((pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"] <= 24).mean() * 100) if retornados else 0.0
+    pct_48 = float((pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"] <= 48).mean() * 100) if retornados else 0.0
+
+    daily = (
+        pairs[pairs["Status SLA"].eq("Retornado")]
+        .groupby("DiaEntrega", as_index=False)
+        .agg(
+            Total=("Logger", "count"),
+            Retornados=("Status SLA", lambda s: int((s == "Retornado").sum())),
+            Pendentes=("Status SLA", lambda s: int((s == "Pendente").sum())),
+            SLA_Medio_Horas=("SLA Horas", "mean"),
+        )
+        .sort_values("DiaEntrega")
+    )
+    daily["DiaEntregaTxt"] = daily["DiaEntrega"].dt.strftime("%d/%m")
+
+    fig_daily = px.bar(
+        daily,
+        x="DiaEntregaTxt",
+        y="SLA_Medio_Horas",
+        text=daily["SLA_Medio_Horas"].map(lambda v: fmt_duration_hours(v) if pd.notna(v) else "--"),
+        color_discrete_sequence=["#6f9eff"],
+        title="Tempo médio de retorno por dia de entrega",
+    )
+    fig_daily.update_traces(textposition="outside", cliponaxis=False)
+    fig_daily.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="#0b1020",
+        plot_bgcolor="#0b1020",
+        margin=dict(l=22, r=20, t=52, b=48),
+        height=340,
+        font=dict(color="#e5eefc"),
+        xaxis=dict(gridcolor="#25304a"),
+        yaxis=dict(gridcolor="#25304a", title="Horas"),
+        title=dict(x=0.02, font=dict(size=15)),
+        bargap=0.25,
+    )
+
+    pending = pairs.loc[pairs["Status SLA"].eq("Pendente"), ["Pedido", "Logger", "Agente", "Motorista", "UF", "Data de Entrega"]].copy()
+    pending["Data de Entrega"] = pd.to_datetime(pending["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S")
+    pending_html = pending.head(15).to_html(index=False, escape=True, classes="data-table", border=0) if not pending.empty else '<div class="empty-box">Nenhum pendente no recorte de SLA.</div>'
+
+    return f"""
+    <div class="section" id="sla-retorno">
+      <div class="section-head">
+        <div>
+          <h2>SLA de Retorno</h2>
+          <p>Base desde 09/04/2026. Cada entrega é pareada com o primeiro retorno posterior do mesmo logger.</p>
+        </div>
+        <a class="btn" href="#top">Voltar ao topo</a>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="label">Entregas no SLA</div><div class="value">{fmt_int(total)}</div><div class="foot">Entregas consideradas desde 09/04</div></div>
+        <div class="kpi"><div class="label">Retornados</div><div class="value">{fmt_int(retornados)}</div><div class="foot">Com retorno pareado</div></div>
+        <div class="kpi"><div class="label">Pendentes</div><div class="value">{fmt_int(pendentes)}</div><div class="foot">Sem retorno ainda</div></div>
+        <div class="kpi"><div class="label">SLA médio</div><div class="value">{fmt_duration_hours(avg_hours)}</div><div class="foot">Média entre entrega e retorno</div></div>
+      </div>
+      <div class="chart-box">
+        {fig_div(fig_daily)}
+      </div>
+      <div class="two-col">
+        <div class="section" style="margin-top:0;">
+          <div class="section-head"><h3 class="section-title">Indicadores de prazo</h3><p class="section-note">Retornos dentro do recorte</p></div>
+          <div class="meta-strip">
+            <div><strong>Mediana:</strong> {fmt_duration_hours(median_hours)}</div>
+            <div><strong>% em até 24h:</strong> {pct_24:.1f}%</div>
+            <div><strong>% em até 48h:</strong> {pct_48:.1f}%</div>
+          </div>
+        </div>
+        <div class="section" style="margin-top:0;">
+          <div class="section-head"><h3 class="section-title">Pendentes no recorte</h3><p class="section-note">Primeiros 15 registros sem retorno pareado</p></div>
+          {pending_html}
+        </div>
+      </div>
+    </div>
+    """
 
 
 def _series_by_day(df: pd.DataFrame) -> pd.DataFrame:
@@ -541,6 +860,7 @@ def build_page(df: pd.DataFrame) -> str:
     today_table = '<div id="today-table" class="table-wrap"></div>'
     yest_table = '<div id="yesterday-table" class="table-wrap"></div>'
     detail_table = '<div id="detail-table" class="table-wrap"></div>'
+    sla_section = build_sla_section()
 
     csv_frame = _csv_frame(df)
     csv_frame.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
@@ -908,6 +1228,10 @@ def build_page(df: pd.DataFrame) -> str:
       <div style="display:flex; justify-content:flex-end; margin-top: 12px;">
         <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
       </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 12px;">
+        <a class="btn" href="#painel-operacional">Ir para o painel operacional</a>
+        <a class="btn" href="#sla-retorno">Ir para SLA de retorno</a>
+      </div>
     </div>
 
     <div class="kpis">
@@ -919,7 +1243,7 @@ def build_page(df: pd.DataFrame) -> str:
       <div class="kpi"><div class="label">Retornados no periodo</div><div class="value" id="kpi-retornados">{fmt_int(total_retorno)}</div><div class="foot">Status Retorno = Retornado</div></div>
     </div>
 
-    <div class="chart-stack">
+    <div class="chart-stack" id="painel-operacional">
       <div class="panel panel-wide">
         <div class="panel-title">Entregas por dia</div>
         {daily_fig}
@@ -965,6 +1289,8 @@ def build_page(df: pd.DataFrame) -> str:
       </div>
       {detail_table}
     </div>
+
+    {sla_section}
 
     <div class="footer">
       Fonte: snapshot_reversa/modelo_final.pkl. O recorte considera apenas loggers com data de entrega valida e janela dos ultimos {WINDOW_DAYS} dias.
