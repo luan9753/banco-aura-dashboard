@@ -285,12 +285,14 @@ def _summarize_state(
         "resumo_ret": resumo_ret,
         "resumo_cf": resumo_cf,
         "resumo_emb": resumo_emb,
+        "cf_dia_7": cf_dia[["Dia", "Total"]].copy(),
         "apto_uso": apto_uso,
         "resumo_cf_aguar": resumo_cf_aguar,
         "map_coverage": round(float(map_coverage), 1),
         "ultima_atualizacao": ultima_atualizacao.strftime("%d/%m/%Y %H:%M") if pd.notna(ultima_atualizacao) else "Sem dados",
         "ret_dia": _series_payload(ret_dia),
         "cf_dia": _series_payload(cf_dia),
+        "cf_dia_7": _series_payload(cf_dia),
         "packing_dia": _series_payload(packing_dia),
         "status": _status_payload(status_df),
     }
@@ -751,6 +753,7 @@ def generate_html_tipo(
             "ultima_atualizacao": ultima_atualizacao.strftime("%d/%m/%Y %H:%M") if pd.notna(ultima_atualizacao) else "Sem dados",
             "ret_dia": {"labels": ret_dia["Dia"].astype(str).tolist() if not ret_dia.empty else [], "values": ret_dia["Total"].astype(int).tolist() if not ret_dia.empty else []},
             "cf_dia": {"labels": cf_dia["Dia"].astype(str).tolist() if not cf_dia.empty else [], "values": cf_dia["Total"].astype(int).tolist() if not cf_dia.empty else []},
+            "cf_7d": {"labels": cf_dia["Dia"].astype(str).tolist() if not cf_dia.empty else [], "values": cf_dia["Total"].astype(int).tolist() if not cf_dia.empty else []},
             "packing_dia": {"labels": pack_dia["Dia"].astype(str).tolist() if not pack_dia.empty else [], "values": pack_dia["Total"].astype(int).tolist() if not pack_dia.empty else []},
             "status": {
                 "labels": status_df.head(12).sort_values("Total", ascending=True)["Status"].astype(str).tolist() if not status_df.empty else [],
@@ -921,6 +924,7 @@ def generate_html_tipo(
 <div class="kpi-grid">
   <div class="kpi-card"><div class="kpi-title">Retornados ao Estoque</div><div class="kpi-value" id="kpi-rec">{fmt(all_state["total_rec_est"])}</div></div>
   <div class="kpi-card"><div class="kpi-title">Entregues à Câmara Fria</div><div class="kpi-value" id="kpi-cf">{fmt(all_state["total_mov_cf"])}</div></div>
+  <div class="kpi-card"><div class="kpi-title">Movimentados hoje</div><div class="kpi-value" id="kpi-cf-today">{fmt(all_state["resumo_cf"])}</div></div>
   <div class="kpi-card"><div class="kpi-title">Volumes Embalados</div><div class="kpi-value" id="kpi-pack">{fmt(all_state["total_packing"])}</div></div>
   <div class="kpi-card"><div class="kpi-title">Estoque Atual (GRU)</div><div class="kpi-value" id="kpi-estoque">{fmt(all_state["total_estoque"])}</div></div>
 </div>
@@ -932,6 +936,7 @@ def generate_html_tipo(
 <div class="charts">
   <div class="chart-box"><div class="chart-title">Retornados ao Estoque</div><div id="chart-ret" style="height:290px"></div></div>
   <div class="chart-box"><div class="chart-title">Entregues à Câmara Fria</div><div id="chart-cf" style="height:290px"></div></div>
+  <div class="chart-box"><div class="chart-title">Câmara Fria por dia</div><div id="chart-cf-7d" style="height:290px"></div></div>
   <div class="chart-box"><div class="chart-title">Status Geral dos Dataloggers (Top 12)</div><div id="chart-status" style="height:430px"></div></div>
   <div class="chart-box"><div class="chart-title">Volumes Embalados</div><div id="chart-pack" style="height:290px"></div></div>
 </div>
@@ -1104,6 +1109,7 @@ function refreshTipo() {{
   setText("resumo-ret", fmt(data.resumo_ret));
   setText("kpi-rec", fmt(data.total_rec_est));
   setText("kpi-cf", fmt(data.total_mov_cf));
+  setText("kpi-cf-today", fmt(data.resumo_cf));
   setText("kpi-pack", fmt(data.total_packing));
   setText("kpi-estoque", fmt(data.total_estoque));
   const badgeDisp = document.getElementById("badge-disponivel");
@@ -1112,6 +1118,7 @@ function refreshTipo() {{
   if (badgeAg) badgeAg.innerHTML = badgeHtml(data.resumo_cf_aguar, data.apto_uso);
   renderBar("chart-ret", data.ret_dia.labels, data.ret_dia.values, "#4d7ed5", 290);
   renderBar("chart-cf", data.cf_dia.labels, data.cf_dia.values, "#5c8ce2", 290);
+  renderBar("chart-cf-7d", data.cf_7d.labels, data.cf_7d.values, "#7da7ff", 290);
   renderStatus("chart-status", data.status.labels, data.status.values);
   renderBar("chart-pack", data.packing_dia.labels, data.packing_dia.values, "#77a2ee", 290);
   renderDetailTable();
