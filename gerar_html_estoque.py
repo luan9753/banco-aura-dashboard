@@ -112,6 +112,11 @@ def q_packing(days: int) -> str:
         f"dh.tp_acaomovimentacao NOT IN (3) AND dh.id_destino='{DESTINO_CAMARA_FRIA}' AND dh.id_finalidade='{FINALIDADE_PACKING}'",
         days)
 
+def q_recebidos_cf(days: int) -> str:
+    return _q_hist_base(
+        f"dh.tp_acaomovimentacao=2 AND dh.id_destino='{DESTINO_CAMARA_FRIA}' AND dh.id_finalidade='{FINALIDADE_PEDIDOS}'",
+        days)
+
 def q_mov_recente(days: int) -> str:
     return f"""
 SELECT d.ds_tag, dh.dt_inclusao AS dt_historico
@@ -176,6 +181,142 @@ def daily_unique(df: pd.DataFrame, date_col: str, id_col: str = "ds_tag", last_n
     base = base[(base["Dia"].notna()) & (base[id_col] != "")]
     agg = (base.groupby("Dia", as_index=False)[id_col].nunique()
                .rename(columns={id_col: "Total"}).sort_values("Dia"))
+    out = full_days.merge(agg, how="left", on="Dia")
+    out["Total"] = out["Total"].fillna(0).astype(int)
+    out["Dia"] = out["Dia"].dt.date
+    return out
+
+def daily_unique_status_combo(
+    df: pd.DataFrame,
+    date_col: str,
+    last_n_days: int = 7,
+) -> pd.DataFrame:
+    full_days = pd.DataFrame({"Dia": pd.date_range(end=pd.Timestamp.now().normalize(), periods=last_n_days, freq="D")})
+    required = {"ds_tag", date_col, "ds_destino", "ds_finalidade", "ds_statusrecebimento"}
+    if df.empty or not required.issubset(df.columns):
+        full_days["Total"] = 0
+        full_days["Dia"] = full_days["Dia"].dt.date
+        return full_days
+
+    base = df.copy()
+    base["Dia"] = pd.to_datetime(base[date_col], errors="coerce").dt.normalize()
+    base["ds_tag"] = base["ds_tag"].fillna("").astype(str).str.strip()
+    base["_dest_norm"] = base["ds_destino"].map(normalize_text)
+    base["_fin_norm"] = base["ds_finalidade"].map(normalize_text)
+    base["_stat_norm"] = base["ds_statusrecebimento"].map(normalize_text)
+    base = base[(base["Dia"].notna()) & (base["ds_tag"] != "")]
+    base = base[
+        base["_dest_norm"].eq("CAMARA FRIA")
+        & base["_fin_norm"].eq("PEDIDOS")
+        & base["_stat_norm"].eq("RECEBIDO")
+    ]
+    if base.empty:
+        full_days["Total"] = 0
+        full_days["Dia"] = full_days["Dia"].dt.date
+        return full_days
+
+    agg = (
+        base.groupby("Dia", as_index=False)["ds_tag"]
+        .nunique()
+        .rename(columns={"ds_tag": "Total"})
+        .sort_values("Dia")
+    )
+    out = full_days.merge(agg, how="left", on="Dia")
+    out["Total"] = out["Total"].fillna(0).astype(int)
+    out["Dia"] = out["Dia"].dt.date
+    return out
+
+def daily_received_cf_validation(
+    df_mov_cf: pd.DataFrame,
+    df_estoque_status_geral: pd.DataFrame,
+    last_n_days: int = 7,
+) -> pd.DataFrame:
+    full_days = pd.DataFrame({"Dia": pd.date_range(end=pd.Timestamp.now().normalize(), periods=last_n_days, freq="D")})
+    required = {"ds_tag", "dt_historico"}
+    if (
+        df_mov_cf.empty
+        or df_estoque_status_geral.empty
+        or not required.issubset(df_mov_cf.columns)
+        or not {"ds_tag", "dt_atualizacao"}.issubset(df_estoque_status_geral.columns)
+    ):
+        full_days["Total"] = 0
+        full_days["Dia"] = full_days["Dia"].dt.date
+        return full_days
+
+    mov = df_mov_cf.copy()
+    mov["_tag_norm"] = normalize_tag_series(mov["ds_tag"])
+    mov["dt_historico"] = pd.to_datetime(mov["dt_historico"], errors="coerce")
+    mov = mov[mov["_tag_norm"].ne("")].sort_values("dt_historico", ascending=False, na_position="last")
+    mov_last = mov.drop_duplicates(subset=["_tag_norm"], keep="first")
+
+    status = df_estoque_status_geral.copy()
+    status["_tag_norm"] = normalize_tag_series(status["ds_tag"])
+    status["dt_atualizacao"] = pd.to_datetime(status["dt_atualizacao"], errors="coerce")
+    status = status[status["_tag_norm"].ne("")].sort_values("dt_atualizacao", ascending=False, na_position="last")
+    status_last = status.drop_duplicates(subset=["_tag_norm"], keep="first")
+
+    base = mov_last.merge(
+        status_last[["_tag_norm", "dt_atualizacao"]],
+        how="left",
+        on="_tag_norm",
+        suffixes=("_mov", "_status"),
+    )
+    base["recebido_cf"] = (
+        base["dt_atualizacao"].notna()
+        & base["dt_historico"].notna()
+        & base["dt_atualizacao"].gt(base["dt_historico"])
+    )
+    base = base[base["recebido_cf"]].copy()
+    if base.empty:
+        full_days["Total"] = 0
+        full_days["Dia"] = full_days["Dia"].dt.date
+        return full_days
+
+    base["Dia"] = pd.to_datetime(base["dt_atualizacao"], errors="coerce").dt.normalize()
+    base = base[base["Dia"].notna()]
+    agg = (
+        base.groupby("Dia", as_index=False)["_tag_norm"]
+        .nunique()
+        .rename(columns={"_tag_norm": "Total"})
+        .sort_values("Dia")
+    )
+    out = full_days.merge(agg, how="left", on="Dia")
+    out["Total"] = out["Total"].fillna(0).astype(int)
+    out["Dia"] = out["Dia"].dt.date
+    return out
+
+def daily_cf_received_history(df_hist: pd.DataFrame, last_n_days: int = 7) -> pd.DataFrame:
+    full_days = pd.DataFrame({"Dia": pd.date_range(end=pd.Timestamp.now().normalize(), periods=last_n_days, freq="D")})
+    required = {"ds_tag", "dt_historico", "ds_destino", "ds_finalidade", "ds_statusrecebimento"}
+    if df_hist.empty or not required.issubset(df_hist.columns):
+        full_days["Total"] = 0
+        full_days["Dia"] = full_days["Dia"].dt.date
+        return full_days
+
+    base = df_hist.copy()
+    base["Dia"] = pd.to_datetime(base["dt_historico"], errors="coerce").dt.normalize()
+    base["ds_tag"] = base["ds_tag"].fillna("").astype(str).str.strip()
+    base["_dest_norm"] = base["ds_destino"].map(normalize_text)
+    base["_fin_norm"] = base["ds_finalidade"].map(normalize_text)
+    base["_stat_norm"] = base["ds_statusrecebimento"].map(normalize_text)
+    base = base[
+        base["Dia"].notna()
+        & base["ds_tag"].ne("")
+        & base["_dest_norm"].eq("CAMARA FRIA")
+        & base["_fin_norm"].eq("PEDIDOS")
+        & base["_stat_norm"].eq("RECEBIDO")
+    ].copy()
+    if base.empty:
+        full_days["Total"] = 0
+        full_days["Dia"] = full_days["Dia"].dt.date
+        return full_days
+
+    agg = (
+        base.groupby("Dia", as_index=False)
+        .size()
+        .rename(columns={"size": "Total"})
+        .sort_values("Dia")
+    )
     out = full_days.merge(agg, how="left", on="Dia")
     out["Total"] = out["Total"].fillna(0).astype(int)
     out["Dia"] = out["Dia"].dt.date
@@ -598,7 +739,7 @@ def generate_html(
   <div class="resumo-title">Resumo do Dia ({today_str})</div>
   <div class="resumo-grid-main">
     <div class="resumo-card">
-      <div class="resumo-label">Entregues à Câmara Fria</div>
+      <div class="resumo-label">Movimentados para CF</div>
       <div class="resumo-value">{fmt(resumo_cf)}</div>
     </div>
     <div class="resumo-card">
@@ -656,6 +797,7 @@ def generate_html_tipo(
     df_mov_cf: pd.DataFrame,
     df_rec_est: pd.DataFrame,
     df_packing: pd.DataFrame,
+    df_receb_cf: pd.DataFrame,
     df_mov_recente_5d: pd.DataFrame,
 ) -> str:
     for df, col in [
@@ -663,6 +805,7 @@ def generate_html_tipo(
         (df_mov_cf, "dt_historico"),
         (df_rec_est, "dt_historico"),
         (df_packing, "dt_historico"),
+        (df_receb_cf, "dt_historico"),
         (df_mov_recente_5d, "dt_historico"),
     ]:
         df[col] = pd.to_datetime(df[col], errors="coerce")
@@ -697,9 +840,10 @@ def generate_html_tipo(
     df_mov_cf = _filter_hist(df_mov_cf)
     df_rec_est = _filter_hist(df_rec_est)
     df_packing = _filter_hist(df_packing)
+    df_receb_cf = _filter_hist(df_receb_cf)
     df_mov_recente_5d = _filter_hist(df_mov_recente_5d)
 
-    def _state(label: str, dfe: pd.DataFrame, dffc: pd.DataFrame, dfre: pd.DataFrame, dfpa: pd.DataFrame, dfr5: pd.DataFrame) -> dict:
+    def _state(label: str, dfe: pd.DataFrame, dffc: pd.DataFrame, dfre: pd.DataFrame, dfpa: pd.DataFrame, dfrcf: pd.DataFrame, dfr5: pd.DataFrame) -> dict:
         total_mov_cf = int(dffc["ds_tag"].nunique()) if "ds_tag" in dffc.columns else 0
         total_rec_est = int(dfre["ds_tag"].nunique()) if "ds_tag" in dfre.columns else 0
         total_packing = int(dfpa["ds_tag"].nunique()) if "ds_tag" in dfpa.columns else 0
@@ -712,6 +856,7 @@ def generate_html_tipo(
                 total_estoque = int(est_base["ds_tag"].dropna().astype(str).str.strip().loc[lambda s: s.ne("")].nunique())
         ret_dia = daily_unique(dfre, "dt_historico")
         cf_dia = daily_unique(dffc, "dt_historico")
+        cf_recebido_dia = daily_unique(dfrcf, "dt_historico")
         pack_dia = daily_unique(dfpa, "dt_historico")
         resumo_ret, _ = get_today_delta(ret_dia)
         resumo_cf, _ = get_today_delta(cf_dia)
@@ -753,7 +898,7 @@ def generate_html_tipo(
             "ultima_atualizacao": ultima_atualizacao.strftime("%d/%m/%Y %H:%M") if pd.notna(ultima_atualizacao) else "Sem dados",
             "ret_dia": {"labels": ret_dia["Dia"].astype(str).tolist() if not ret_dia.empty else [], "values": ret_dia["Total"].astype(int).tolist() if not ret_dia.empty else []},
             "cf_dia": {"labels": cf_dia["Dia"].astype(str).tolist() if not cf_dia.empty else [], "values": cf_dia["Total"].astype(int).tolist() if not cf_dia.empty else []},
-            "cf_7d": {"labels": cf_dia["Dia"].astype(str).tolist() if not cf_dia.empty else [], "values": cf_dia["Total"].astype(int).tolist() if not cf_dia.empty else []},
+            "cf_7d": {"labels": cf_recebido_dia["Dia"].astype(str).tolist() if not cf_recebido_dia.empty else [], "values": cf_recebido_dia["Total"].astype(int).tolist() if not cf_recebido_dia.empty else []},
             "packing_dia": {"labels": pack_dia["Dia"].astype(str).tolist() if not pack_dia.empty else [], "values": pack_dia["Total"].astype(int).tolist() if not pack_dia.empty else []},
             "status": {
                 "labels": status_df.head(12).sort_values("Total", ascending=True)["Status"].astype(str).tolist() if not status_df.empty else [],
@@ -762,7 +907,7 @@ def generate_html_tipo(
         }
 
     device_types = sorted(DEVICE_TYPES)
-    states = {"ALL": _state("Todos os tipos", df_estoque_geral, df_mov_cf, df_rec_est, df_packing, df_mov_recente_5d)}
+    states = {"ALL": _state("Todos os tipos", df_estoque_geral, df_mov_cf, df_rec_est, df_packing, df_receb_cf, df_mov_recente_5d)}
     for r in range(1, len(device_types)):
         for combo in combinations(device_types, r):
             selected = set(combo)
@@ -773,6 +918,7 @@ def generate_html_tipo(
                 _subset_types(df_mov_cf, selected),
                 _subset_types(df_rec_est, selected),
                 _subset_types(df_packing, selected),
+                _subset_types(df_receb_cf, selected),
                 _subset_types(df_mov_recente_5d, selected),
             )
 
@@ -923,8 +1069,7 @@ def generate_html_tipo(
 </div>
 <div class="kpi-grid">
   <div class="kpi-card"><div class="kpi-title">Retornados ao Estoque</div><div class="kpi-value" id="kpi-rec">{fmt(all_state["total_rec_est"])}</div></div>
-  <div class="kpi-card"><div class="kpi-title">Entregues à Câmara Fria</div><div class="kpi-value" id="kpi-cf">{fmt(all_state["total_mov_cf"])}</div></div>
-  <div class="kpi-card"><div class="kpi-title">Movimentados hoje</div><div class="kpi-value" id="kpi-cf-today">{fmt(all_state["resumo_cf"])}</div></div>
+  <div class="kpi-card"><div class="kpi-title">Movimentados para CF</div><div class="kpi-value" id="kpi-cf">{fmt(all_state["total_mov_cf"])}</div></div>
   <div class="kpi-card"><div class="kpi-title">Volumes Embalados</div><div class="kpi-value" id="kpi-pack">{fmt(all_state["total_packing"])}</div></div>
   <div class="kpi-card"><div class="kpi-title">Estoque Atual (GRU)</div><div class="kpi-value" id="kpi-estoque">{fmt(all_state["total_estoque"])}</div></div>
 </div>
@@ -935,8 +1080,8 @@ def generate_html_tipo(
 </div>
 <div class="charts">
   <div class="chart-box"><div class="chart-title">Retornados ao Estoque</div><div id="chart-ret" style="height:290px"></div></div>
-  <div class="chart-box"><div class="chart-title">Entregues à Câmara Fria</div><div id="chart-cf" style="height:290px"></div></div>
-  <div class="chart-box"><div class="chart-title">Câmara Fria por dia</div><div id="chart-cf-7d" style="height:290px"></div></div>
+  <div class="chart-box"><div class="chart-title">Movimentados para CF</div><div id="chart-cf" style="height:290px"></div></div>
+  <div class="chart-box"><div class="chart-title">Recebidos pela CF</div><div id="chart-cf-7d" style="height:290px"></div></div>
   <div class="chart-box"><div class="chart-title">Status Geral dos Dataloggers (Top 12)</div><div id="chart-status" style="height:430px"></div></div>
   <div class="chart-box"><div class="chart-title">Volumes Embalados</div><div id="chart-pack" style="height:290px"></div></div>
 </div>
@@ -1109,7 +1254,6 @@ function refreshTipo() {{
   setText("resumo-ret", fmt(data.resumo_ret));
   setText("kpi-rec", fmt(data.total_rec_est));
   setText("kpi-cf", fmt(data.total_mov_cf));
-  setText("kpi-cf-today", fmt(data.resumo_cf));
   setText("kpi-pack", fmt(data.total_packing));
   setText("kpi-estoque", fmt(data.total_estoque));
   const badgeDisp = document.getElementById("badge-disponivel");
@@ -1147,15 +1291,17 @@ def main():
         f_cf      = ex.submit(_read, engine, q_mov_cf(BASE_DAYS))
         f_est     = ex.submit(_read, engine, q_rec_est(BASE_DAYS))
         f_pack    = ex.submit(_read, engine, q_packing(BASE_DAYS))
+        f_rcf     = ex.submit(_read, engine, q_recebidos_cf(BASE_DAYS))
         f_recente = ex.submit(_read, engine, q_mov_recente(5))
         df_geral   = f_geral.result()
         df_cf      = f_cf.result()
         df_est     = f_est.result()
         df_pack    = f_pack.result()
+        df_rcf     = f_rcf.result()
         df_recente = f_recente.result()
 
-    print(f"  [estoque] geral={len(df_geral)} cf={len(df_cf)} est={len(df_est)} pack={len(df_pack)} recente={len(df_recente)}")
-    html = generate_html_tipo(df_geral, df_cf, df_est, df_pack, df_recente)
+    print(f"  [estoque] geral={len(df_geral)} cf={len(df_cf)} est={len(df_est)} pack={len(df_pack)} rcf={len(df_rcf)} recente={len(df_recente)}")
+    html = generate_html_tipo(df_geral, df_cf, df_est, df_pack, df_rcf, df_recente)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
     print(f"  [estoque] HTML salvo: {OUTPUT_FILE.name}")
 
