@@ -313,7 +313,7 @@
       <div class="pill-row">
         <div class="pill"><strong>Janela:</strong> ultimos 20 dias</div>
         <div class="pill"><strong>Ultima entrega:</strong> 11/05/2026 16:08:00</div>
-        <div class="pill"><strong>Gerado em:</strong> 11/05/2026 16:27:46</div>
+        <div class="pill"><strong>Gerado em:</strong> 11/05/2026 16:48:24</div>
       </div>
       <div style="display:flex; justify-content:flex-end; margin-top: 12px;">
         <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
@@ -385,31 +385,58 @@
       <div class="section-head">
         <div>
           <h2>SLA de Retorno</h2>
-          <p>Base desde 09/04/2026. Cada entrega é pareada com o primeiro retorno posterior do mesmo logger.</p>
+          <p>Base desde 09/04/2026. Cada entrega e pareada com o primeiro retorno posterior do mesmo logger.</p>
         </div>
-        <a class="btn" href="#top" onclick="scrollToSection('top'); return false;">Voltar ao topo</a>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn" href="CONTROLE_ENTREGAS_20D_SLA_PENDENTES.csv" download>Baixar pendentes SLA</a>
+          <a class="btn" href="#top" onclick="scrollToSection('top'); return false;">Voltar ao topo</a>
+        </div>
       </div>
       <div class="kpis">
         <div class="kpi"><div class="label">Entregas no SLA</div><div class="value">8.276</div><div class="foot">Entregas consideradas desde 09/04</div></div>
-        <div class="kpi"><div class="label">Retornados</div><div class="value">4.724</div><div class="foot">Com retorno pareado</div></div>
-        <div class="kpi"><div class="label">Pendentes</div><div class="value">3.552</div><div class="foot">Sem retorno ainda</div></div>
-        <div class="kpi"><div class="label">SLA médio</div><div class="value">7d 16h 58m</div><div class="foot">Média entre entrega e retorno</div></div>
+        <div class="kpi"><div class="label">Retornados</div><div class="value">4.981</div><div class="foot">Com retorno pareado</div></div>
+        <div class="kpi"><div class="label">Pendentes</div><div class="value">3.295</div><div class="foot">Sem retorno ainda</div></div>
+        <div class="kpi"><div class="label">SLA medio</div><div class="value">8d 3m</div><div class="foot">Media entre entrega e retorno</div></div>
       </div>
-      <div class="chart-box">
-        <div>                            <div id="fa9ea7fe-9684-4732-8cf9-9ed8f6e5a851" class="plotly-graph-div" style="height:340px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("fa9ea7fe-9684-4732-8cf9-9ed8f6e5a851")) {                    Plotly.newPlot(                        "fa9ea7fe-9684-4732-8cf9-9ed8f6e5a851",                        [{"hovertemplate":"DiaEntregaTxt=%{x}\u003cbr\u003eSLA_Medio_Horas=%{y}\u003cbr\u003etext=%{text}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"","marker":{"color":"#6f9eff","pattern":{"shape":""}},"name":"","orientation":"v","showlegend":false,"text":["9d 12h 16m","9d 21m","13d 55m","9d 14h 18m","10d 18h 41m","9d 9h 42m","10d 8h 7m","12d 11h 35m","2d 23h 45m","5d 10h 33m","7d 15h 35m","10d 11h 14m","11d 3h 37m","9d 23h 30m","8d 17h 19m","7d 17h 49m","5d 12h 30m","9d 5h 14m","4d 15h 13m","4d 17h 4m","2d 21h 41m","1d 22h 25m","1d 12h 40m","2d 15h 19m"],"textposition":"outside","x":["09\u002f04","10\u002f04","11\u002f04","13\u002f04","14\u002f04","15\u002f04","16\u002f04","17\u002f04","18\u002f04","20\u002f04","22\u002f04","23\u002f04","24\u002f04","27\u002f04","28\u002f04","29\u002f04","30\u002f04","01\u002f05","02\u002f05","04\u002f05","05\u002f05","06\u002f05","07\u002f05","08\u002f05"],"xaxis":"x","y":{"dtype":"f8","bdata":"rip2B3OIbED6f1RgdgtrQGiVORvEjnNAYVoPOl3JbEDgbIVazypwQMyMCcxHNmxAV8HsyJ8Db0CF16\u002fnN7lyQDvVroOk71FAepCfxW5RYEB19ysok\u002fJmQN\u002ftk9Z0Z29Af9G7Wv+5cEBKOyTyF\u002fBtQEFIciswKmpABfB8evQ5Z0ACdWeVHZBgQPtjMxGVp2tAuNAdzaLNW0CXkDbiC0RcQOOhljr+a1FAgNaWSFk2R0A16fu3C1VCQOyFhaV8p09A"},"yaxis":"y","type":"bar","cliponaxis":false}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"DiaEntregaTxt"},"gridcolor":"#25304a"},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Horas"},"gridcolor":"#25304a"},"legend":{"tracegroupgap":0},"title":{"text":"Tempo médio de retorno por dia de entrega","font":{"size":15},"x":0.02},"barmode":"relative","margin":{"l":22,"r":20,"t":52,"b":48},"font":{"color":"#e5eefc"},"paper_bgcolor":"#0b1020","plot_bgcolor":"#0b1020","height":340,"bargap":0.25},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+      <div class="kpis" style="margin-top:12px;">
+        <div class="kpi"><div class="label">% retorno em 48h</div><div class="value">13,0%</div><div class="foot">646 de 4.981 retornos</div></div>
+        <div class="kpi"><div class="label">% retorno em 7 dias</div><div class="value">48,2%</div><div class="foot">2.401 de 4.981 retornos</div></div>
+        <div class="kpi"><div class="label">% retorno em 14 dias</div><div class="value">85,4%</div><div class="foot">4.254 de 4.981 retornos</div></div>
+        <div class="kpi"><div class="label">% retorno em 20 dias</div><div class="value">96,6%</div><div class="foot">4.812 de 4.981 retornos</div></div>
       </div>
       <div class="two-col">
-        <div class="section" style="margin-top:0;">
-          <div class="section-head"><h3 class="section-title">Indicadores de prazo</h3><p class="section-note">Retornos dentro do recorte</p></div>
-          <div class="meta-strip">
-            <div><strong>Mediana:</strong> 6d 23h 17m</div>
-            <div><strong>% em até 24h:</strong> 3.6%</div>
-            <div><strong>% em até 48h:</strong> 13.7%</div>
+        <div class="section" style="margin-top:16px;">
+          <div class="section-head">
+            <div>
+              <h3 class="section-title">Faixas de atraso</h3>
+              <p class="section-note">Somente pendentes com mais de 10 dias</p>
+            </div>
+          </div>
+          <div>                            <div id="f90fb97c-3c23-45e5-8f60-82df58821243" class="plotly-graph-div" style="height:320px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("f90fb97c-3c23-45e5-8f60-82df58821243")) {                    Plotly.newPlot(                        "f90fb97c-3c23-45e5-8f60-82df58821243",                        [{"hovertemplate":"Faixa=%{x}\u003cbr\u003ePendentes=%{text}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"","marker":{"color":"#6f9eff","pattern":{"shape":""}},"name":"","orientation":"v","showlegend":false,"text":{"dtype":"f8","bdata":"AAAAAAAAi0AAAAAAAGiEQAAAAAAAwGtAAAAAAAAAZUA="},"textposition":"outside","x":["11-14 dias","15-20 dias","21-30 dias","31+ dias"],"xaxis":"x","y":{"dtype":"i2","bdata":"YAONAt4AqAA="},"yaxis":"y","type":"bar","cliponaxis":false}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Faixa"},"gridcolor":"#25304a","tickangle":-15},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Pendentes"},"gridcolor":"#25304a"},"legend":{"tracegroupgap":0},"title":{"text":"Faixas de atraso","font":{"size":15},"x":0.02},"barmode":"relative","margin":{"l":18,"r":18,"t":48,"b":36},"font":{"color":"#e5eefc"},"paper_bgcolor":"#0b1020","plot_bgcolor":"#0b1020","height":320,"bargap":0.25},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+        </div>
+        <div class="section" style="margin-top:16px;">
+          <div class="section-head">
+            <div>
+              <h3 class="section-title">Ranking dos mais atrasados</h3>
+              <p class="section-note">Top 10 por dias sem retorno</p>
+            </div>
+          </div>
+          <div>                            <div id="823103da-2841-446b-ba5b-1a8627c64f00" class="plotly-graph-div" style="height:320px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("823103da-2841-446b-ba5b-1a8627c64f00")) {                    Plotly.newPlot(                        "823103da-2841-446b-ba5b-1a8627c64f00",                        [{"hovertemplate":"Dias sem retorno=%{x}\u003cbr\u003ePendencia=%{y}\u003cbr\u003eDiasTxt=%{text}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"","marker":{"color":"#2f6fd6","pattern":{"shape":""}},"name":"","orientation":"h","showlegend":false,"text":["32.3d","32.3d","32.3d","32.3d","32.3d","32.3d","32.3d","32.3d","32.3d","32.3d"],"textposition":"inside","x":{"dtype":"f8","bdata":"xFwQmRMiQEC5pq+NXSVAQDzUhxCLJUBAPNSHEIslQEA81IcQiyVAQDzUhxCLJUBAPNSHEIslQEA81IcQiyVAQDzUhxCLJUBA0BJxpMkmQEA="},"xaxis":"x","y":["550050 | A9135","549882 | A7070","549746 | A3976","549746 | S0374","549746 | S1435","549746 | S0540","549746 | S0533","549746 | S0538","549746 | S1475","550006 | A7799"],"yaxis":"y","type":"bar","cliponaxis":false}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#f2f5fa"},"error_y":{"color":"#f2f5fa"},"marker":{"line":{"color":"rgb(17,17,17)","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"baxis":{"endlinecolor":"#A2B1C6","gridcolor":"#506784","linecolor":"#506784","minorgridcolor":"#506784","startlinecolor":"#A2B1C6"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"line":{"color":"#283442"}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"marker":{"line":{"color":"#283442"}},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#506784"},"line":{"color":"rgb(17,17,17)"}},"header":{"fill":{"color":"#2a3f5f"},"line":{"color":"rgb(17,17,17)"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#f2f5fa","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#f2f5fa"},"geo":{"bgcolor":"rgb(17,17,17)","lakecolor":"rgb(17,17,17)","landcolor":"rgb(17,17,17)","showlakes":true,"showland":true,"subunitcolor":"#506784"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"dark"},"paper_bgcolor":"rgb(17,17,17)","plot_bgcolor":"rgb(17,17,17)","polar":{"angularaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","radialaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"yaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"},"zaxis":{"backgroundcolor":"rgb(17,17,17)","gridcolor":"#506784","gridwidth":2,"linecolor":"#506784","showbackground":true,"ticks":"","zerolinecolor":"#C8D4E3"}},"shapedefaults":{"line":{"color":"#f2f5fa"}},"sliderdefaults":{"bgcolor":"#C8D4E3","bordercolor":"rgb(17,17,17)","borderwidth":1,"tickwidth":0},"ternary":{"aaxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"baxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""},"bgcolor":"rgb(17,17,17)","caxis":{"gridcolor":"#506784","linecolor":"#506784","ticks":""}},"title":{"x":0.05},"updatemenudefaults":{"bgcolor":"#506784","borderwidth":0},"xaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#283442","linecolor":"#506784","ticks":"","title":{"standoff":15},"zerolinecolor":"#283442","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Dias sem retorno"},"gridcolor":"#25304a"},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Pendencia"},"gridcolor":"#25304a","autorange":"reversed"},"legend":{"tracegroupgap":0},"title":{"text":"Ranking dos mais atrasados","font":{"size":15},"x":0.02},"barmode":"relative","margin":{"l":18,"r":18,"t":48,"b":36},"font":{"color":"#e5eefc"},"paper_bgcolor":"#0b1020","plot_bgcolor":"#0b1020","height":320},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+        </div>
+      </div>
+      <div class="section" style="margin-top:16px;">
+        <div class="section-head">
+          <div>
+            <h3 class="section-title">Lista de pendencias</h3>
+            <p class="section-note">Somente loggers pendentes ha mais de 10 dias</p>
           </div>
         </div>
-        <div class="section" style="margin-top:0;">
-          <div class="section-head"><h3 class="section-title">Pendentes no recorte</h3><p class="section-note">Primeiros 15 registros sem retorno pareado</p></div>
-          <table class="dataframe data-table">
+        <div class="meta-strip" style="margin-bottom:12px;">
+          <div><strong>Media de retorno:</strong> 8d 3m</div>
+          <div><strong>Pendentes &gt; 10 dias:</strong> 1.907</div>
+          <div><strong>Base SLA:</strong> desde 09/04/2026</div>
+        </div>
+        <table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
       <th>Pedido</th>
@@ -418,132 +445,513 @@
       <th>Motorista</th>
       <th>UF</th>
       <th>Data de Entrega</th>
+      <th>Dias sem retorno</th>
+      <th>Status SLA</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>553115</td>
-      <td>A7200</td>
-      <td>VTCLOG - GRU</td>
-      <td>MAURICIO APARECIDO PASSOS</td>
-      <td>SP</td>
-      <td>11/05/2026 16:08:00</td>
+      <td>550006</td>
+      <td>A7799</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 09:32:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A6231</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549746</td>
+      <td>A3976</td>
+      <td>THE - TRANSPRESS</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PI</td>
+      <td>09/04/2026 09:46:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A6514</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549746</td>
+      <td>S0374</td>
+      <td>THE - TRANSPRESS</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PI</td>
+      <td>09/04/2026 09:46:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A6665</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549746</td>
+      <td>S0533</td>
+      <td>THE - TRANSPRESS</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PI</td>
+      <td>09/04/2026 09:46:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A7141</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549746</td>
+      <td>S0538</td>
+      <td>THE - TRANSPRESS</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PI</td>
+      <td>09/04/2026 09:46:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A7338</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549746</td>
+      <td>S0540</td>
+      <td>THE - TRANSPRESS</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PI</td>
+      <td>09/04/2026 09:46:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A7342</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549746</td>
+      <td>S1435</td>
+      <td>THE - TRANSPRESS</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PI</td>
+      <td>09/04/2026 09:46:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A7885</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549746</td>
+      <td>S1475</td>
+      <td>THE - TRANSPRESS</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PI</td>
+      <td>09/04/2026 09:46:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A8565</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>549882</td>
+      <td>A7070</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 09:48:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A8568</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>550050</td>
+      <td>A9135</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>ANDRE LUIZ DA SILVA</td>
+      <td>MG</td>
+      <td>09/04/2026 10:25:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A8664</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>550168</td>
+      <td>A2944</td>
+      <td>IOS - MASPEX CARGO</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>BA</td>
+      <td>09/04/2026 10:44:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A8765</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
-      <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>550053</td>
+      <td>A6696</td>
+      <td>IOS - MASPEX CARGO</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>BA</td>
+      <td>09/04/2026 10:45:00</td>
+      <td>32,3</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A8909</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
+      <td>549723</td>
+      <td>A5393</td>
+      <td>SLZ - L.A.LOG</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
       <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>09/04/2026 10:58:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A8938</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
+      <td>549723</td>
+      <td>A5785</td>
+      <td>SLZ - L.A.LOG</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
       <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>09/04/2026 10:58:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
     </tr>
     <tr>
-      <td>553477</td>
-      <td>A9066</td>
-      <td>SLZ - REIS CAVALCANTE EXPRESSO</td>
-      <td>MAX SANTOS DE JESUS</td>
+      <td>549723</td>
+      <td>A9553</td>
+      <td>SLZ - L.A.LOG</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
       <td>MA</td>
-      <td>11/05/2026 15:17:00</td>
+      <td>09/04/2026 10:58:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549723</td>
+      <td>S1119</td>
+      <td>SLZ - L.A.LOG</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MA</td>
+      <td>09/04/2026 10:58:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549723</td>
+      <td>S1568</td>
+      <td>SLZ - L.A.LOG</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MA</td>
+      <td>09/04/2026 10:58:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549498</td>
+      <td>A5062</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 11:01:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549498</td>
+      <td>A7178</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 11:01:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549498</td>
+      <td>S1064</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 11:01:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549498</td>
+      <td>S1066</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 11:01:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549498</td>
+      <td>S1109</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 11:01:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549498</td>
+      <td>S1151</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 11:01:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549498</td>
+      <td>S1173</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 11:01:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549891</td>
+      <td>A5898</td>
+      <td>RBR - ADARK COMERCIO E TRANSPORTE</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>AC</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S0311</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S1006</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S1031</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S1055</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S1160</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S1181</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S1213</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549754</td>
+      <td>S1224</td>
+      <td>VTCLOG - REC</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>PE</td>
+      <td>09/04/2026 11:20:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549734</td>
+      <td>A0901</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 11:29:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549734</td>
+      <td>A7399</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 11:29:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549734</td>
+      <td>A9013</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 11:29:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>550002</td>
+      <td>A1348</td>
+      <td>POA - GMB TRANSPORTES E LOGISTICA ME</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>RS</td>
+      <td>09/04/2026 11:30:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549481</td>
+      <td>A7603</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 11:33:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549481</td>
+      <td>A9180</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 11:33:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549804</td>
+      <td>S0364</td>
+      <td>CGR - LH TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MS</td>
+      <td>09/04/2026 11:43:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549790</td>
+      <td>A6021</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:00:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549790</td>
+      <td>A9278</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:00:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549790</td>
+      <td>A9335</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:00:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549790</td>
+      <td>S0755</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:00:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549790</td>
+      <td>S0818</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:00:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549790</td>
+      <td>S0833</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:00:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549790</td>
+      <td>TA0857</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:00:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549458</td>
+      <td>TA0745</td>
+      <td>CGB - JR TRANSPORTES</td>
+      <td>WESLEY MIRANDA PIMENTEL</td>
+      <td>MT</td>
+      <td>09/04/2026 12:06:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>550183</td>
+      <td>A8413</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>EDEI TORRES ESPINOLA</td>
+      <td>MG</td>
+      <td>09/04/2026 12:22:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
+    </tr>
+    <tr>
+      <td>549993</td>
+      <td>A8250</td>
+      <td>VTCLOG CNF - CONTAGEM</td>
+      <td>ANDRE LUIZ DA SILVA</td>
+      <td>MG</td>
+      <td>09/04/2026 12:46:00</td>
+      <td>32,2</td>
+      <td>Pendente</td>
     </tr>
   </tbody>
 </table>
-        </div>
       </div>
     </div>
     

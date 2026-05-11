@@ -36,7 +36,7 @@ echo [OK] Git liberado.
 echo.
 
 echo [3/4] Preparando commit no Git...
-git add CONTROLE_ENTREGAS_20D.html CONTROLE_ENTREGAS_20D.csv gerar_html_controle_entregas.py ATUALIZAR_CONTROLE_ENTREGAS.bat
+git add CONTROLE_ENTREGAS_20D.html CONTROLE_ENTREGAS_20D.csv CONTROLE_ENTREGAS_20D_SLA_PENDENTES.csv gerar_html_controle_entregas.py ATUALIZAR_CONTROLE_ENTREGAS.bat
 if errorlevel 1 set "ERRMSG=Falha no git add (passo 3)." & goto :CYCLE_FAIL
 
 git diff --cached --quiet --exit-code

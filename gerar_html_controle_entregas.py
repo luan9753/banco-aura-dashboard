@@ -21,6 +21,7 @@ SNAPSHOT_DIR = WORKSPACE.parent / "snapshot_reversa"
 MODEL_FILE = SNAPSHOT_DIR / "modelo_final.pkl"
 OUTPUT_HTML = WORKSPACE / "CONTROLE_ENTREGAS_20D.html"
 OUTPUT_CSV = WORKSPACE / "CONTROLE_ENTREGAS_20D.csv"
+OUTPUT_SLA_PENDING_CSV = WORKSPACE / "CONTROLE_ENTREGAS_20D_SLA_PENDENTES.csv"
 
 WINDOW_DAYS = 20
 TABLE_MAX_ROWS = 50
@@ -340,6 +341,8 @@ def fmt_duration_hours(hours: float) -> str:
     return " ".join(parts)
 
 
+
+
 def build_sla_section() -> str:
     try:
         deliveries_raw = load_data()
@@ -347,7 +350,7 @@ def build_sla_section() -> str:
         returns = load_sla_returns()
         pairs = build_sla_pairs(deliveries, returns)
     except Exception as exc:
-        msg = escape(f"Não foi possível montar o SLA de retorno agora: {type(exc).__name__}")
+        msg = escape(f"Nao foi possivel montar o SLA de retorno agora: {type(exc).__name__}")
         return f"""
         <div class="section">
           <div class="section-head">
@@ -361,83 +364,198 @@ def build_sla_section() -> str:
         """
 
     total = len(pairs)
-    retornados = int((pairs["Status SLA"] == "Retornado").sum()) if not pairs.empty else 0
-    pendentes = total - retornados
-    avg_hours = float(pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"].mean()) if retornados else float("nan")
-    median_hours = float(pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"].median()) if retornados else float("nan")
-    pct_24 = float((pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"] <= 24).mean() * 100) if retornados else 0.0
-    pct_48 = float((pairs.loc[pairs["Status SLA"].eq("Retornado"), "SLA Horas"] <= 48).mean() * 100) if retornados else 0.0
+    returned = pairs.loc[pairs["Status SLA"].eq("Retornado")].copy()
+    pending = pairs.loc[pairs["Status SLA"].eq("Pendente")].copy()
 
-    daily = (
-        pairs[pairs["Status SLA"].eq("Retornado")]
-        .groupby("DiaEntrega", as_index=False)
-        .agg(
-            Total=("Logger", "count"),
-            Retornados=("Status SLA", lambda s: int((s == "Retornado").sum())),
-            Pendentes=("Status SLA", lambda s: int((s == "Pendente").sum())),
-            SLA_Medio_Horas=("SLA Horas", "mean"),
+    retornados = len(returned)
+    pendentes = len(pending)
+
+    ret_hours = returned["SLA Horas"].dropna() if not returned.empty else pd.Series(dtype=float)
+    avg_hours = float(ret_hours.mean()) if not ret_hours.empty else float("nan")
+    pct_48_count = int((ret_hours <= 48).sum()) if not ret_hours.empty else 0
+    pct_7d_count = int((ret_hours <= 24 * 7).sum()) if not ret_hours.empty else 0
+    pct_14d_count = int((ret_hours <= 24 * 14).sum()) if not ret_hours.empty else 0
+    pct_20d_count = int((ret_hours <= 24 * 20).sum()) if not ret_hours.empty else 0
+
+    now = pd.Timestamp.now()
+    pending_view = pending.copy()
+    if pending_view.empty:
+        pending_view["Dias sem retorno"] = pd.Series(dtype=float)
+    else:
+        entrega_dt = pd.to_datetime(pending_view["Data de Entrega"], errors="coerce")
+        pending_view["Dias sem retorno"] = (now - entrega_dt).dt.total_seconds() / 86400
+        pending_view = pending_view.loc[pending_view["Dias sem retorno"] > 10].copy()
+        pending_view = pending_view.sort_values(["Dias sem retorno", "Data de Entrega"], ascending=[False, True]).copy()
+
+    bucket_df = pd.DataFrame(columns=["Faixa", "Pendentes"])
+    if not pending_view.empty:
+        bucket_source = pending_view.copy()
+        bucket_source["Faixa"] = pd.cut(
+            bucket_source["Dias sem retorno"],
+            bins=[10, 14, 20, 30, float("inf")],
+            labels=["11-14 dias", "15-20 dias", "21-30 dias", "31+ dias"],
+            include_lowest=False,
+            right=True,
         )
-        .sort_values("DiaEntrega")
-    )
-    daily["DiaEntregaTxt"] = daily["DiaEntrega"].dt.strftime("%d/%m")
+        bucket_df = (
+            bucket_source.groupby("Faixa", as_index=False, observed=False)
+            .size()
+            .rename(columns={"size": "Pendentes"})
+        )
+        bucket_df["Faixa"] = pd.Categorical(
+            bucket_df["Faixa"],
+            categories=["11-14 dias", "15-20 dias", "21-30 dias", "31+ dias"],
+            ordered=True,
+        )
+        bucket_df = bucket_df.sort_values("Faixa")
 
-    fig_daily = px.bar(
-        daily,
-        x="DiaEntregaTxt",
-        y="SLA_Medio_Horas",
-        text=daily["SLA_Medio_Horas"].map(lambda v: fmt_duration_hours(v) if pd.notna(v) else "--"),
-        color_discrete_sequence=["#6f9eff"],
-        title="Tempo médio de retorno por dia de entrega",
-    )
-    fig_daily.update_traces(textposition="outside", cliponaxis=False)
-    fig_daily.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="#0b1020",
-        plot_bgcolor="#0b1020",
-        margin=dict(l=22, r=20, t=52, b=48),
-        height=340,
-        font=dict(color="#e5eefc"),
-        xaxis=dict(gridcolor="#25304a"),
-        yaxis=dict(gridcolor="#25304a", title="Horas"),
-        title=dict(x=0.02, font=dict(size=15)),
-        bargap=0.25,
-    )
+        rank_df = pd.DataFrame(columns=list(pending_view.columns) + ["Pendencia"])
+        if not pending_view.empty:
+            rank_df = pending_view.sort_values(["Dias sem retorno", "Data de Entrega"], ascending=[False, True]).head(10).copy()
+            rank_df["Pendencia"] = rank_df.apply(
+                lambda r: f"{r.get('Pedido', '')} | {r.get('Logger', '')}",
+                axis=1,
+            )
+            rank_df["DiasTxt"] = rank_df["Dias sem retorno"].map(lambda v: f"{v:.1f}d")
 
-    pending = pairs.loc[pairs["Status SLA"].eq("Pendente"), ["Pedido", "Logger", "Agente", "Motorista", "UF", "Data de Entrega"]].copy()
-    pending["Data de Entrega"] = pd.to_datetime(pending["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S")
-    pending_html = pending.head(15).to_html(index=False, escape=True, classes="data-table", border=0) if not pending.empty else '<div class="empty-box">Nenhum pendente no recorte de SLA.</div>'
+    pending_export = pending_view.copy()
+    pending_export["Data de Entrega"] = pd.to_datetime(pending_export["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
+    if "Ultimo_Historico" in pending_export.columns:
+        pending_export["Ultimo_Historico"] = pd.to_datetime(pending_export["Ultimo_Historico"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
+    pending_export["Dias sem retorno"] = pd.to_numeric(pending_export["Dias sem retorno"], errors="coerce").round(1)
+    pending_export["Dias sem retorno"] = pending_export["Dias sem retorno"].map(lambda v: str(v).replace(".", ",") if pd.notna(v) else "")
+    pending_export["Status SLA"] = "Pendente"
+
+    pending_cols = [
+        "Pedido",
+        "Logger",
+        "Tipo Datalogger",
+        "Agente",
+        "Motorista",
+        "UF",
+        "UF Destino",
+        "Cidade Destino",
+        "Destinatario",
+        "Data de Entrega",
+        "Ultimo_Historico",
+        "Dias sem retorno",
+        "Status SLA",
+    ]
+    pending_export = pending_export[[c for c in pending_cols if c in pending_export.columns]].copy()
+    pending_export.to_csv(OUTPUT_SLA_PENDING_CSV, index=False, sep=";", encoding="utf-8-sig")
+
+    if pending_export.empty:
+        pending_html = '<div class="empty-box">Nenhum logger pendente ha mais de 10 dias.</div>'
+    else:
+        pending_html = pending_export.head(50).to_html(index=False, escape=True, classes="data-table", border=0)
+
+    bucket_chart_html = '<div class="empty-box">Sem faixas de atraso para mostrar.</div>'
+    if not bucket_df.empty:
+        bucket_fig = px.bar(
+            bucket_df,
+            x="Faixa",
+            y="Pendentes",
+            text="Pendentes",
+            title="Faixas de atraso",
+            color_discrete_sequence=["#6f9eff"],
+        )
+        bucket_fig.update_traces(textposition="outside", cliponaxis=False)
+        bucket_fig.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="#0b1020",
+            plot_bgcolor="#0b1020",
+            margin=dict(l=18, r=18, t=48, b=36),
+            height=320,
+            font=dict(color="#e5eefc"),
+            xaxis=dict(gridcolor="#25304a", tickangle=-15),
+            yaxis=dict(gridcolor="#25304a", title="Pendentes"),
+            title=dict(x=0.02, font=dict(size=15)),
+            bargap=0.25,
+        )
+        bucket_chart_html = fig_div(bucket_fig)
+
+    rank_chart_html = '<div class="empty-box">Sem ranking de atraso para mostrar.</div>'
+    if not rank_df.empty:
+        rank_fig = px.bar(
+            rank_df.sort_values("Dias sem retorno", ascending=True),
+            x="Dias sem retorno",
+            y="Pendencia",
+            orientation="h",
+            text="DiasTxt",
+            title="Ranking dos mais atrasados",
+            color_discrete_sequence=["#2f6fd6"],
+        )
+        rank_fig.update_traces(textposition="inside", cliponaxis=False)
+        rank_fig.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="#0b1020",
+            plot_bgcolor="#0b1020",
+            margin=dict(l=18, r=18, t=48, b=36),
+            height=320,
+            font=dict(color="#e5eefc"),
+            xaxis=dict(gridcolor="#25304a", title="Dias sem retorno"),
+            yaxis=dict(gridcolor="#25304a", autorange="reversed"),
+            title=dict(x=0.02, font=dict(size=15)),
+        )
+        rank_chart_html = fig_div(rank_fig)
 
     return f"""
     <div class="section" id="sla-retorno">
       <div class="section-head">
         <div>
           <h2>SLA de Retorno</h2>
-          <p>Base desde 09/04/2026. Cada entrega é pareada com o primeiro retorno posterior do mesmo logger.</p>
+          <p>Base desde 09/04/2026. Cada entrega e pareada com o primeiro retorno posterior do mesmo logger.</p>
         </div>
-        <a class="btn" href="#top" onclick="scrollToSection('top'); return false;">Voltar ao topo</a>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn" href="CONTROLE_ENTREGAS_20D_SLA_PENDENTES.csv" download>Baixar pendentes SLA</a>
+          <a class="btn" href="#top" onclick="scrollToSection('top'); return false;">Voltar ao topo</a>
+        </div>
       </div>
       <div class="kpis">
         <div class="kpi"><div class="label">Entregas no SLA</div><div class="value">{fmt_int(total)}</div><div class="foot">Entregas consideradas desde 09/04</div></div>
         <div class="kpi"><div class="label">Retornados</div><div class="value">{fmt_int(retornados)}</div><div class="foot">Com retorno pareado</div></div>
         <div class="kpi"><div class="label">Pendentes</div><div class="value">{fmt_int(pendentes)}</div><div class="foot">Sem retorno ainda</div></div>
-        <div class="kpi"><div class="label">SLA médio</div><div class="value">{fmt_duration_hours(avg_hours)}</div><div class="foot">Média entre entrega e retorno</div></div>
+        <div class="kpi"><div class="label">SLA medio</div><div class="value">{fmt_duration_hours(avg_hours)}</div><div class="foot">Media entre entrega e retorno</div></div>
       </div>
-      <div class="chart-box">
-        {fig_div(fig_daily)}
+      <div class="kpis" style="margin-top:12px;">
+        <div class="kpi"><div class="label">% retorno em 48h</div><div class="value">{fmt_pct(pct_48_count, retornados)}</div><div class="foot">{fmt_int(pct_48_count)} de {fmt_int(retornados)} retornos</div></div>
+        <div class="kpi"><div class="label">% retorno em 7 dias</div><div class="value">{fmt_pct(pct_7d_count, retornados)}</div><div class="foot">{fmt_int(pct_7d_count)} de {fmt_int(retornados)} retornos</div></div>
+        <div class="kpi"><div class="label">% retorno em 14 dias</div><div class="value">{fmt_pct(pct_14d_count, retornados)}</div><div class="foot">{fmt_int(pct_14d_count)} de {fmt_int(retornados)} retornos</div></div>
+        <div class="kpi"><div class="label">% retorno em 20 dias</div><div class="value">{fmt_pct(pct_20d_count, retornados)}</div><div class="foot">{fmt_int(pct_20d_count)} de {fmt_int(retornados)} retornos</div></div>
       </div>
       <div class="two-col">
-        <div class="section" style="margin-top:0;">
-          <div class="section-head"><h3 class="section-title">Indicadores de prazo</h3><p class="section-note">Retornos dentro do recorte</p></div>
-          <div class="meta-strip">
-            <div><strong>Mediana:</strong> {fmt_duration_hours(median_hours)}</div>
-            <div><strong>% em até 24h:</strong> {pct_24:.1f}%</div>
-            <div><strong>% em até 48h:</strong> {pct_48:.1f}%</div>
+        <div class="section" style="margin-top:16px;">
+          <div class="section-head">
+            <div>
+              <h3 class="section-title">Faixas de atraso</h3>
+              <p class="section-note">Somente pendentes com mais de 10 dias</p>
+            </div>
+          </div>
+          {bucket_chart_html}
+        </div>
+        <div class="section" style="margin-top:16px;">
+          <div class="section-head">
+            <div>
+              <h3 class="section-title">Ranking dos mais atrasados</h3>
+              <p class="section-note">Top 10 por dias sem retorno</p>
+            </div>
+          </div>
+          {rank_chart_html}
+        </div>
+      </div>
+      <div class="section" style="margin-top:16px;">
+        <div class="section-head">
+          <div>
+            <h3 class="section-title">Lista de pendencias</h3>
+            <p class="section-note">Somente loggers pendentes ha mais de 10 dias</p>
           </div>
         </div>
-        <div class="section" style="margin-top:0;">
-          <div class="section-head"><h3 class="section-title">Pendentes no recorte</h3><p class="section-note">Primeiros 15 registros sem retorno pareado</p></div>
-          {pending_html}
+        <div class="meta-strip" style="margin-bottom:12px;">
+          <div><strong>Media de retorno:</strong> {fmt_duration_hours(avg_hours)}</div>
+          <div><strong>Pendentes &gt; 10 dias:</strong> {fmt_int(len(pending_export))}</div>
+          <div><strong>Base SLA:</strong> desde 09/04/2026</div>
         </div>
+        {pending_html}
       </div>
     </div>
     """
