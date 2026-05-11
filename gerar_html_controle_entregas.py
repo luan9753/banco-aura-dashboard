@@ -409,14 +409,22 @@ def build_sla_section() -> str:
         )
         bucket_df = bucket_df.sort_values("Faixa")
 
-        rank_df = pd.DataFrame(columns=list(pending_view.columns) + ["Pendencia"])
+        rank_df = pd.DataFrame(columns=["Agente", "Pendentes", "MediaDias", "MaiorDia"])
         if not pending_view.empty:
-            rank_df = pending_view.sort_values(["Dias sem retorno", "Data de Entrega"], ascending=[False, True]).head(10).copy()
-            rank_df["Pendencia"] = rank_df.apply(
-                lambda r: f"{r.get('Pedido', '')} | {r.get('Logger', '')}",
-                axis=1,
+            rank_df = (
+                pending_view.groupby("Agente", as_index=False)
+                .agg(
+                    Pendentes=("Logger", "count"),
+                    MediaDias=("Dias sem retorno", "mean"),
+                    MaiorDia=("Dias sem retorno", "max"),
+                )
+                .sort_values(["Pendentes", "MaiorDia"], ascending=[False, False])
+                .head(10)
+                .copy()
             )
-            rank_df["DiasTxt"] = rank_df["Dias sem retorno"].map(lambda v: f"{v:.1f}d")
+            rank_df["Agente"] = rank_df["Agente"].fillna("").astype(str).str.strip()
+            rank_df.loc[rank_df["Agente"].eq(""), "Agente"] = "SEM AGENTE"
+            rank_df["PendentesTxt"] = rank_df["Pendentes"].map(lambda v: fmt_int(int(v)))
 
     pending_export = pending_view.copy()
     pending_export["Data de Entrega"] = pd.to_datetime(pending_export["Data de Entrega"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M:%S").fillna("")
@@ -477,12 +485,12 @@ def build_sla_section() -> str:
     rank_chart_html = '<div class="empty-box">Sem ranking de atraso para mostrar.</div>'
     if not rank_df.empty:
         rank_fig = px.bar(
-            rank_df.sort_values("Dias sem retorno", ascending=True),
-            x="Dias sem retorno",
-            y="Pendencia",
+            rank_df.sort_values("Pendentes", ascending=True),
+            x="Pendentes",
+            y="Agente",
             orientation="h",
-            text="DiasTxt",
-            title="Ranking dos mais atrasados",
+            text="PendentesTxt",
+            title="Agentes com mais pendencias acima de 10 dias",
             color_discrete_sequence=["#2f6fd6"],
         )
         rank_fig.update_traces(textposition="inside", cliponaxis=False)
@@ -493,7 +501,7 @@ def build_sla_section() -> str:
             margin=dict(l=18, r=18, t=48, b=36),
             height=320,
             font=dict(color="#e5eefc"),
-            xaxis=dict(gridcolor="#25304a", title="Dias sem retorno"),
+            xaxis=dict(gridcolor="#25304a", title="Pendencias"),
             yaxis=dict(gridcolor="#25304a", autorange="reversed"),
             title=dict(x=0.02, font=dict(size=15)),
         )
@@ -536,8 +544,8 @@ def build_sla_section() -> str:
         <div class="section" style="margin-top:16px;">
           <div class="section-head">
             <div>
-              <h3 class="section-title">Ranking dos mais atrasados</h3>
-              <p class="section-note">Top 10 por dias sem retorno</p>
+              <h3 class="section-title">Agentes responsaveis</h3>
+              <p class="section-note">Top 10 por quantidade de pendencias acima de 10 dias</p>
             </div>
           </div>
           {rank_chart_html}
