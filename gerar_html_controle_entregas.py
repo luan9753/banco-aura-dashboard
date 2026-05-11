@@ -402,7 +402,7 @@ def build_sla_section() -> str:
           <h2>SLA de Retorno</h2>
           <p>Base desde 09/04/2026. Cada entrega é pareada com o primeiro retorno posterior do mesmo logger.</p>
         </div>
-        <a class="btn" href="#top">Voltar ao topo</a>
+        <a class="btn" href="#top" onclick="scrollToSection('top'); return false;">Voltar ao topo</a>
       </div>
       <div class="kpis">
         <div class="kpi"><div class="label">Entregas no SLA</div><div class="value">{fmt_int(total)}</div><div class="foot">Entregas consideradas desde 09/04</div></div>
@@ -1198,7 +1198,7 @@ def build_page(df: pd.DataFrame) -> str:
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
+      <div class="hero" id="top">
       <div class="eyebrow">Controle operacional</div>
       <h1>Controle de Entregas dos Loggers</h1>
       <div class="sub">
@@ -1229,8 +1229,8 @@ def build_page(df: pd.DataFrame) -> str:
         <a class="btn" href="CONTROLE_ENTREGAS_20D.csv" download>Baixar CSV completo</a>
       </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 12px;">
-        <a class="btn" href="#painel-operacional">Ir para o painel operacional</a>
-        <a class="btn" href="#sla-retorno">Ir para SLA de retorno</a>
+        <a class="btn" href="#painel-operacional" onclick="scrollToSection('painel-operacional'); return false;">Ir para o painel operacional</a>
+        <a class="btn" href="#sla-retorno" onclick="scrollToSection('sla-retorno'); return false;">Ir para SLA de retorno</a>
       </div>
     </div>
 
@@ -1296,6 +1296,16 @@ def build_page(df: pd.DataFrame) -> str:
       Fonte: snapshot_reversa/modelo_final.pkl. O recorte considera apenas loggers com data de entrega valida e janela dos ultimos {WINDOW_DAYS} dias.
     </div>
     <script>
+      function scrollToSection(id) {{
+        const target = document.getElementById(id);
+        if (target) {{
+          target.scrollIntoView({{ behavior: "smooth", block: "start" }});
+          if (history.replaceState) {{
+            history.replaceState(null, "", "#" + id);
+          }}
+        }}
+      }}
+
       const RAW_DATA = {data_json};
       const DAY_LABELS = {day_labels_json};
       const TABLE_COLUMNS = [
