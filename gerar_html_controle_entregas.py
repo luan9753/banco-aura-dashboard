@@ -27,6 +27,9 @@ TABLE_MAX_ROWS = 50
 SECTION_TABLE_ROWS = 25
 SLA_START = pd.Timestamp("2026-04-09")
 
+DESTINO_ESTOQUE = "25d5c356-32a8-4221-84ae-8230061b9163"
+FINALIDADE_SALDO_ESTOQUE = "e8031b09-2d30-414d-af5b-16e43a41618b"
+
 load_env_file()
 
 PG_CFG = {
@@ -212,7 +215,7 @@ def prepare_sla_deliveries(df: pd.DataFrame) -> pd.DataFrame:
 def load_sla_returns() -> pd.DataFrame:
     sql = """
     SELECT
-        upper(trim(d.ds_tag)) AS Logger,
+        upper(trim(d.ds_tag)) AS logger,
         dh.dt_inclusao AS dt_retorno
     FROM public.tbddataloggerhistoricos dh
     INNER JOIN vwtipos tam
@@ -224,18 +227,27 @@ def load_sla_returns() -> pd.DataFrame:
     INNER JOIN tbdcaddataloggers d
         ON dh.id_datalogger = d.id_datalogger
     WHERE dh.dt_inclusao >= :cutoff
-      AND (lower(tam.text) LIKE '%receb%' OR lower(tam.text) LIKE '%restaur%')
-      AND upper(trim(dd.ds_destino)) = 'EM ESTOQUE'
-      AND upper(trim(df.ds_finalidade)) IN ('SALDO ESTOQUE', 'SALDO DE ESTOQUE')
+      AND dh.tp_acaomovimentacao IN (2, 12)
+      AND dh.id_destino = :destino_estoque
+      AND dh.id_finalidade = :finalidade_saldo_estoque
     """
     try:
-        df = _read_pg(sql, {"cutoff": SLA_START.to_pydatetime()})
+        df = _read_pg(
+            sql,
+            {
+                "cutoff": SLA_START.to_pydatetime(),
+                "destino_estoque": DESTINO_ESTOQUE,
+                "finalidade_saldo_estoque": FINALIDADE_SALDO_ESTOQUE,
+            },
+        )
     except Exception:
         return pd.DataFrame(columns=["Logger", "dt_retorno"])
 
     if df.empty:
         return pd.DataFrame(columns=["Logger", "dt_retorno"])
 
+    df.columns = [str(col).strip() for col in df.columns]
+    df = df.rename(columns={col: "Logger" for col in df.columns if str(col).lower() == "logger"})
     df["Logger"] = clean_text(df["Logger"]).str.upper()
     df["dt_retorno"] = pd.to_datetime(df["dt_retorno"], errors="coerce")
     df = df[df["Logger"].ne("") & df["dt_retorno"].notna()].copy()
