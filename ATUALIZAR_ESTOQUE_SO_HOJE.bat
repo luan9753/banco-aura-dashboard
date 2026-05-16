@@ -15,7 +15,6 @@ set "INTERVAL_MIN=40"
 :LOOP
 set "EXIT_CODE=0"
 set "HAS_CHANGES=0"
-set "HAS_STASH=0"
 
 echo ============================================================
 echo  ATUALIZAR ESTOQUE DATALOGGERS - SOMENTE HOJE
@@ -60,14 +59,6 @@ echo [INFO] Push nao necessario (sem alteracoes novas).
 goto :AFTER_PUSH
 
 :DO_PUSH
-git status --porcelain | findstr /r "." >nul
-if not errorlevel 1 (
-    echo [INFO] Salvando alteracoes locais temporariamente...
-    git stash push --include-untracked -m "auto-publish ESTOQUE_DATALOGGERS_HOJE" >nul
-    if errorlevel 1 set "ERRMSG=Falha ao criar stash local." & goto :FAIL
-    set "HAS_STASH=1"
-)
-
 echo [INFO] Sincronizando com origin/main antes do push...
 git pull --rebase --autostash origin main
 if errorlevel 1 set "ERRMSG=Falha ao sincronizar com o remoto (passo 3)." & goto :FAIL
@@ -75,12 +66,6 @@ if errorlevel 1 set "ERRMSG=Falha ao sincronizar com o remoto (passo 3)." & goto
 git push origin HEAD:main
 if errorlevel 1 set "ERRMSG=Falha no git push (passo 3)." & goto :FAIL
 echo [OK] Push concluido com sucesso.
-
-if "%HAS_STASH%"=="1" (
-    echo [INFO] Restaurando alteracoes locais...
-    git stash pop --index >nul
-    if errorlevel 1 echo [WARN] Nao foi possivel restaurar o stash local automaticamente.
-)
 
 :AFTER_PUSH
 echo.
@@ -95,11 +80,6 @@ goto :LOOP
 :FAIL
 set "EXIT_CODE=1"
 echo.
-if "%HAS_STASH%"=="1" (
-    echo [INFO] Restaurando alteracoes locais...
-    git stash pop --index >nul
-    if errorlevel 1 echo [WARN] Nao foi possivel restaurar o stash local automaticamente.
-)
 echo [ERRO] %ERRMSG%
 echo Fim com erro: %date% %time%
 echo.
