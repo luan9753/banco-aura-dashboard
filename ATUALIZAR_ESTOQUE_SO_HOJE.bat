@@ -11,6 +11,7 @@ if errorlevel 1 exit /b 1
 
 set "PAGE_URL=https://luan9753.github.io/banco-aura-dashboard/ESTOQUE_DATALOGGERS.html"
 set "INTERVAL_MIN=5"
+set "INTERVAL_SEC=300"
 
 :LOOP
 set "EXIT_CODE=0"
@@ -74,7 +75,7 @@ echo URL publicada: %PAGE_URL%
 echo Fim do ciclo: %date% %time%
 echo.
 echo Proxima atualizacao em %INTERVAL_MIN% minutos. Pressione Ctrl+C para encerrar.
-timeout /t %INTERVAL_MIN% /nobreak >nul
+timeout /t %INTERVAL_SEC% /nobreak >nul
 goto :LOOP
 
 :FAIL
@@ -84,5 +85,5 @@ echo [ERRO] %ERRMSG%
 echo Fim com erro: %date% %time%
 echo.
 echo Proxima tentativa em %INTERVAL_MIN% minutos. Pressione Ctrl+C para encerrar.
-timeout /t %INTERVAL_MIN% /nobreak >nul
+timeout /t %INTERVAL_SEC% /nobreak >nul
 goto :LOOP
