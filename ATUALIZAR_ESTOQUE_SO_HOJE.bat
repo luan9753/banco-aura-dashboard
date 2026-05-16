@@ -10,7 +10,7 @@ cd /d "%~dp0"
 if errorlevel 1 exit /b 1
 
 set "PAGE_URL=https://luan9753.github.io/banco-aura-dashboard/ESTOQUE_DATALOGGERS.html"
-set "INTERVAL_MIN=40"
+set "INTERVAL_MIN=5"
 
 :LOOP
 set "EXIT_CODE=0"
